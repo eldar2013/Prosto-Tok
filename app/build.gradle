@@ -1,9 +1,12 @@
+
 plugins {
     id 'com.android.application'
 }
+
 android {
     namespace 'ru.prostotok.app'
     compileSdk 35
+
     defaultConfig {
         applicationId 'ru.prostotok.app'
         minSdk 23
@@ -12,6 +15,12 @@ android {
         versionName '0.1.0'
     }
 }
+
+configurations.configureEach {
+    exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
+    exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+}
+
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.media3:media3-exoplayer:1.4.1'
