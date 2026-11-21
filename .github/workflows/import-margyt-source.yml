@@ -7,7 +7,7 @@ on:
       - work/prostotok-margyt-adaptation
     paths:
       - .github/workflows/import-margyt-source.yml
-      - MargyT-main.zip
+      - MargyT-main.zip.part*
 
 permissions:
   contents: write
@@ -21,9 +21,11 @@ jobs:
         with:
           ref: work/prostotok-margyt-adaptation
           fetch-depth: 0
-      - name: Validate and extract uploaded MargyT archive
+      - name: Reassemble and validate uploaded MargyT archive
         run: |
-          test -f MargyT-main.zip
+          test -f MargyT-main.zip.part01
+          test -f MargyT-main.zip.part02
+          cat MargyT-main.zip.part01 MargyT-main.zip.part02 > MargyT-main.zip
           python3 - <<'PY'
           import zipfile
           archive = zipfile.ZipFile("MargyT-main.zip")
@@ -35,13 +37,13 @@ jobs:
           PY
           test -f upstream-extracted/margyt/README.md
           mkdir -p vendor/margyt
-          rsync -a --delete upstream-extracted/margyt/ vendor/margyt/
+          rsync -a --delete --exclude='.git' upstream-extracted/margyt/ vendor/margyt/
       - name: Commit imported upstream snapshot
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A vendor/margyt
-          git rm --ignore-unmatch MargyT-main.zip
+          git rm --ignore-unmatch MargyT-main.zip.part01 MargyT-main.zip.part02
           if git diff --cached --quiet; then
             echo "No source changes to import."
             exit 0
