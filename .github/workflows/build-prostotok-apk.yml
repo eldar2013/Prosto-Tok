@@ -32,6 +32,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install Python image dependency
+        run: python -m pip install --upgrade Pillow
+
       - name: Download original TikTok APK from private URL
         env:
           APK_URL: ${{ secrets.TIKTOK_APK_URL }}
