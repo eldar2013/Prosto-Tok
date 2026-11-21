@@ -1,0 +1,41 @@
+name: Prosto Tok source checks
+
+on:
+  push:
+    branches:
+      - work/prostotok-margyt-adaptation
+    paths:
+      - 'vendor/margyt/**'
+      - '.github/workflows/prostotok-checks.yml'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-source-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout working branch
+        uses: actions/checkout@v4
+        with:
+          ref: work/prostotok-margyt-adaptation
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile Python sources
+        run: |
+          python -m compileall -q vendor/margyt/margyt
+          python -m compileall -q vendor/margyt/patcher
+      - name: Verify required source and licence files
+        run: |
+          test -s vendor/margyt/README.md
+          test -s vendor/margyt/LICENSE
+          test -s vendor/margyt/ADDITIONAL-TERMS.md
+          test -s vendor/margyt/margyt/build.py
+          grep -q 'LABEL = "Prosto Tok"' vendor/margyt/margyt/build.py
+          grep -q 'SETTINGS_LABEL = "Prosto Tok настройки"' vendor/margyt/margyt/build.py
