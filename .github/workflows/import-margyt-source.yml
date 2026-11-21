@@ -7,6 +7,7 @@ on:
       - work/prostotok-margyt-adaptation
     paths:
       - .github/workflows/import-margyt-source.yml
+      - MargyT-main.zip
 
 permissions:
   contents: write
@@ -20,21 +21,27 @@ jobs:
         with:
           ref: work/prostotok-margyt-adaptation
           fetch-depth: 0
-      - name: Fetch exact MargyT archive revision from its upstream host
+      - name: Validate and extract uploaded MargyT archive
         run: |
-          git init upstream-margyt
-          git -C upstream-margyt remote add origin https://git.narez.xyz/narezany/MargyT
-          git -C upstream-margyt fetch --depth=1 origin a0089402f266a67700432fdb56a36fe7e45da6a3
-          git -C upstream-margyt checkout --detach FETCH_HEAD
-      - name: Import complete source snapshot
-        run: |
+          test -f MargyT-main.zip
+          python3 - <<'PY'
+          import zipfile
+          archive = zipfile.ZipFile("MargyT-main.zip")
+          expected = "a0089402f266a67700432fdb56a36fe7e45da6a3"
+          actual = archive.comment.decode("ascii").strip()
+          if actual != expected:
+              raise SystemExit(f"Unexpected MargyT archive revision: {actual!r}")
+          archive.extractall("upstream-extracted")
+          PY
+          test -f upstream-extracted/margyt/README.md
           mkdir -p vendor/margyt
-          rsync -a --delete --exclude='.git' upstream-margyt/ vendor/margyt/
+          rsync -a --delete upstream-extracted/margyt/ vendor/margyt/
       - name: Commit imported upstream snapshot
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add vendor/margyt
+          git add -A vendor/margyt
+          git rm --ignore-unmatch MargyT-main.zip
           if git diff --cached --quiet; then
             echo "No source changes to import."
             exit 0
