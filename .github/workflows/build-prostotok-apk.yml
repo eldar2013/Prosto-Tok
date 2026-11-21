@@ -67,9 +67,9 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "$ACCENT" ]; then
-            ./build.sh --accent "$ACCENT" -o "$GITHUB_WORKSPACE/Prosto-Tok.apk" /tmp/tiktok.apk
+            bash ./build.sh --accent "$ACCENT" -o "$GITHUB_WORKSPACE/Prosto-Tok.apk" /tmp/tiktok.apk
           else
-            ./build.sh -o "$GITHUB_WORKSPACE/Prosto-Tok.apk" /tmp/tiktok.apk
+            bash ./build.sh -o "$GITHUB_WORKSPACE/Prosto-Tok.apk" /tmp/tiktok.apk
           fi
 
       - name: Upload APK as a workflow artifact
