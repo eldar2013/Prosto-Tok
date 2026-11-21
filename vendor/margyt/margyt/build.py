@@ -52,12 +52,12 @@ ALARM_ACTIONS = [
 # builds the list -- but the screen has to still be called this for the mod to
 # recognise it, so the build checks rather than hopes.
 TIKTOK_SETTINGS = "com.ss.android.ugc.aweme.setting.ui.SettingContainerActivity"
-LABEL = "MargyT"
+LABEL = "Prosto Tok"
 
 # The screen has no launcher entry of its own -- it is opened from the row in
 # TikTok's settings -- but an activity still wants a label: it is what the
 # recents card and any "open with" list show.
-SETTINGS_LABEL = "MargyT settings"
+SETTINGS_LABEL = "Prosto Tok настройки"
 SETTINGS_THEME = "Theme_DeviceDefault_Light_NoActionBar"
 
 # what a renamed provider authority ends in, so two mods of the same app can
@@ -682,29 +682,21 @@ class Build:
     ICON_ALIAS = "cat.narezany.margyt.Icon"
 
     def _default_icon_png(self) -> str:
-        """The bitmap the default icon's sizes are made from: the picture default when there is one."""
-        if artwork.DEFAULT_RASTER:
-            full = os.path.join(self.root, artwork.DEFAULT_RASTER, "full.png")
-            if os.path.exists(full):
-                return full
-        return os.path.join(self.root, artwork.MASTER_PNG)
+        """The Prosto Tok artwork used for every launcher density."""
+        return os.path.join(self.root, "branding", "prostotok-icon.png")
 
     def _default_icon_layers(self):
-        """The picture default's adaptive layers, 432 px (108 dp at xxxhdpi), or None for the vector note."""
-        if not artwork.DEFAULT_RASTER:
-            return None
-        folder = os.path.join(self.root, artwork.DEFAULT_RASTER)
-        if not all(os.path.exists(os.path.join(folder, n + ".png")) for n in ("background", "foreground", "full")):
-            return None
+        """Use the supplied square artwork as the adaptive icon background."""
         from PIL import Image
         import io as _io
-        layers = {}
-        for key, name in (("background", "background"), ("foreground", "foreground"), (None, "full")):
-            with Image.open(os.path.join(folder, name + ".png")) as picture:
-                out = _io.BytesIO()
-                picture.convert("RGBA").resize((432, 432), Image.LANCZOS).save(out, "PNG", optimize=True)
-                layers[key] = out.getvalue()
-        return layers
+        source = self._default_icon_png()
+        with Image.open(source) as picture:
+            image = picture.convert("RGBA").resize((432, 432), Image.LANCZOS)
+        full = _io.BytesIO()
+        image.save(full, "PNG", optimize=True)
+        transparent = _io.BytesIO()
+        Image.new("RGBA", (432, 432), (0, 0, 0, 0)).save(transparent, "PNG", optimize=True)
+        return {"background": full.getvalue(), "foreground": transparent.getvalue(), None: full.getvalue()}
 
     def _icon_files(self) -> List[str]:
         return [os.path.join(self.root, "icons", "launcher", key + ".png")
