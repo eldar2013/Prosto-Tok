@@ -20,13 +20,12 @@ jobs:
         with:
           ref: work/prostotok-margyt-adaptation
           fetch-depth: 0
-      - name: Checkout exact MargyT archive revision
-        uses: actions/checkout@v4
-        with:
-          repository: MargyT-Team/MargyT
-          ref: a0089402f266a67700432fdb56a36fe7e45da6a3
-          path: upstream-margyt
-          fetch-depth: 1
+      - name: Fetch exact MargyT archive revision from its upstream host
+        run: |
+          git init upstream-margyt
+          git -C upstream-margyt remote add origin https://git.narez.xyz/narezany/MargyT
+          git -C upstream-margyt fetch --depth=1 origin a0089402f266a67700432fdb56a36fe7e45da6a3
+          git -C upstream-margyt checkout --detach FETCH_HEAD
       - name: Import complete source snapshot
         run: |
           mkdir -p vendor/margyt
