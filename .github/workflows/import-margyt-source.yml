@@ -2,6 +2,11 @@ name: Import MargyT source snapshot
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - work/prostotok-margyt-adaptation
+    paths:
+      - .github/workflows/import-margyt-source.yml
 
 permissions:
   contents: write
@@ -15,11 +20,17 @@ jobs:
         with:
           ref: work/prostotok-margyt-adaptation
           fetch-depth: 0
-      - name: Download MargyT upstream source
+      - name: Checkout exact MargyT archive revision
+        uses: actions/checkout@v4
+        with:
+          repository: MargyT-Team/MargyT
+          ref: a0089402f266a67700432fdb56a36fe7e45da6a3
+          path: upstream-margyt
+          fetch-depth: 1
+      - name: Import complete source snapshot
         run: |
-          git clone --depth 1 https://github.com/MargyT-Team/MargyT.git /tmp/margyt
           mkdir -p vendor/margyt
-          rsync -a --delete --exclude='.git' /tmp/margyt/ vendor/margyt/
+          rsync -a --delete --exclude='.git' upstream-margyt/ vendor/margyt/
       - name: Commit imported upstream snapshot
         run: |
           git config user.name "github-actions[bot]"
@@ -29,5 +40,5 @@ jobs:
             echo "No source changes to import."
             exit 0
           fi
-          git commit -m "Import MargyT upstream source snapshot"
+          git commit -m "Import MargyT source snapshot a008940"
           git push origin HEAD:work/prostotok-margyt-adaptation
