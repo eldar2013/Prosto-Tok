@@ -2516,30 +2516,17 @@ def rewrite_everything(root: str, literals: Optional[Dict[str, str]] = None,
     itself as well, a pass that could not find anything in it is not sent to
     read ten thousand files to learn that.
     """
-    counts = rewrite_smali(root)
-    counts.update(rewrite_literals(root, literals or {}))
-    counts.update(force_false(root))
-    counts.update(rewrite_models(root))
-    counts.update(rewrite_flag_reader(root, dex))
-    counts.update(rewrite_hdr_switch(root, dex))
+    # Prosto Tok safe profile: keep visual/UI customisation and the settings
+    # entry point, but do not rewrite device identity, feed/ad handling,
+    # download permissions/URLs, experiment flags, request dispatch, or links.
+    # Those upstream hooks are intentionally left dormant in this derivative.
+    counts: Dict[str, int] = {}
     counts.update(rewrite_settings_row(root, dex))
     counts.update(rewrite_starts(root, dex))
-    counts.update(rewrite_lite_menu(root, dex))
-    counts.update(rewrite_lite_drops(root, dex))
-    # Class-specific heart hooks must claim the feed heart's Tux tint calls
-    # before the generic accent pass rewrites every TuxIconView tint. The
-    # latter would otherwise swallow the exact native heart hook and leave
-    # the build gate reporting a missing heart-tint patch.
-    counts.update(rewrite_anchored(root))
     counts.update(rewrite_accent(root))
-    counts.update(rewrite_speed_touch(root))
     if dex is None or draws_the_loader(dex):
         counts.update(rewrite_loading(root))
     counts.update(rewrite_cards(root))
-    counts.update(rewrite_recall(root, dex))
-    counts.update(rewrite_frames(root, dex))
-    if dex is None or b"setPrimaryClip" in dex:
-        counts.update(rewrite_clipboard(root))
     return counts
 
 
