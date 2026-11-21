@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="76 88 360 360" width="192" height="192">
+  <!-- "Выжил в Margy Chat": the sad bubble of Margy Chat's own icon, with a crack in it. White on nothing: the badge's colour is put over it -->
+  <defs>
+    <mask id="cut">
+      <rect x="0" y="0" width="512" height="512" fill="#fff"/>
+      <g fill="#000">
+        <rect x="176" y="182" width="36" height="36" rx="9" transform="rotate(45 194 200)"/>
+        <rect x="300" y="182" width="36" height="36" rx="9" transform="rotate(45 318 200)"/>
+        <path d="M176 300c0-44 36-68 80-68s80 24 80 68c0 8-10 12-16 6-16-16-38-24-64-24s-48 8-64 24c-6 6-16 2-16-6Z"/>
+      </g>
+      <path d="M380 122 L366 152 L388 172 L366 204" fill="none" stroke="#000" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+    </mask>
+  </defs>
+  <path mask="url(#cut)" fill="#fff" d="M256 104c-92 0-164 62-164 142 0 42 20 80 54 106-2 26-12 50-30 70-4 5 0 12 7 11 36-4 68-16 94-36 12 3 26 4 39 4 92 0 164-62 164-155S348 104 256 104Z"/>
+</svg>

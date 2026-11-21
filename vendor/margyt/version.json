@@ -1,0 +1,9 @@
+{
+  "_comment": "What the app checks to know whether it is out of date. It reads this from the project's own git server at startup and every five minutes; the badges come from the same box.",
+  "version": "2.3.0",
+  "title": "Epic Style Update",
+  "url": "https://git.narez.xyz/narezany/MargyT/releases/download/v2.3.0/margyt.apk",
+  "notes": "Vice City (GTA VI) theme with gradients and the Vice City icon by default (the usual MargyT icon is in the settings). Accent colour now lives inside themes, and the chosen preset is ticked. Built-in text animation, motion blur, clean links when copying, video stats, preset colours for the Material theme. Anti burn-in no longer makes the bottom strip see-through. Less lag. Removed the dep calculator and the inbox tiles.",
+  "notes_ru": "Тема «Вайс-Сити (GTA VI)» с градиентами и иконка Вайс-Сити по умолчанию (обычная иконка MargyT в настройках). Акцент теперь внутри тем, выбранная готовая тема отмечается. Встроена «Анимация текста», размытие в движении, чистые ссылки при копировании, статистика видео, готовые цвета для темы Material. Антивыгорание больше не просвечивает нижнюю полосу. Меньше лагов. Убраны деп-калькулятор и плитки во входящих.",
+  "notes_uk": "Тема «Вайс-Сіті (GTA VI)» з градієнтами та іконка Вайс-Сіті за замовчуванням (звичайна іконка MargyT у налаштуваннях). Акцент тепер усередині тем, вибрана готова тема позначається. Вбудовано «Анімацію тексту», розмиття в русі, чисті посилання під час копіювання, статистику відео, готові кольори для теми Material. Антивигорання більше не просвічує нижню смугу. Менше лагів. Прибрано деп-калькулятор і плитки у вхідних."
+}
