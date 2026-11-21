@@ -1,0 +1,81 @@
+name: Build Prosto Tok APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      accent:
+        description: "Accent colour in RRGGBB (optional)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Check out working branch
+        uses: actions/checkout@v4
+        with:
+          ref: work/prostotok-margyt-adaptation
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download original TikTok APK from private URL
+        env:
+          APK_URL: ${{ secrets.TIKTOK_APK_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${APK_URL:-}" ]; then
+            echo "::error::Add the repository Actions secret TIKTOK_APK_URL with a direct HTTPS download link to a universal arm64 APK."
+            exit 1
+          fi
+          case "$APK_URL" in
+            https://*) ;;
+            *) echo "::error::TIKTOK_APK_URL must use HTTPS."; exit 1 ;;
+          esac
+          curl --fail --location --retry 3 --retry-delay 5 "$APK_URL" -o /tmp/tiktok.apk
+          file /tmp/tiktok.apk
+          python - <<'PY'
+          import zipfile
+          p = "/tmp/tiktok.apk"
+          if not zipfile.is_zipfile(p):
+              raise SystemExit("Downloaded file is not a valid APK/ZIP.")
+          with zipfile.ZipFile(p) as z:
+              names = set(z.namelist())
+              if "AndroidManifest.xml" not in names or "resources.arsc" not in names:
+                  raise SystemExit("File is not a universal APK (manifest/resources missing); APKS bundles are not supported.")
+              if not any(n.startswith("lib/arm64-v8a/") for n in names):
+                  raise SystemExit("APK does not contain arm64-v8a native libraries.")
+          PY
+
+      - name: Build Prosto Tok
+        working-directory: vendor/margyt
+        env:
+          ACCENT: ${{ inputs.accent }}
+        run: |
+          set -euo pipefail
+          if [ -n "$ACCENT" ]; then
+            ./build.sh --accent "$ACCENT" -o "$GITHUB_WORKSPACE/Prosto-Tok.apk" /tmp/tiktok.apk
+          else
+            ./build.sh -o "$GITHUB_WORKSPACE/Prosto-Tok.apk" /tmp/tiktok.apk
+          fi
+
+      - name: Upload APK as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Prosto-Tok-APK
+          path: Prosto-Tok.apk
+          if-no-files-found: error
+          retention-days: 3
