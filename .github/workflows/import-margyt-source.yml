@@ -1,0 +1,33 @@
+name: Import MargyT source snapshot
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Prosto Tok working branch
+        uses: actions/checkout@v4
+        with:
+          ref: work/prostotok-margyt-adaptation
+          fetch-depth: 0
+      - name: Download MargyT upstream source
+        run: |
+          git clone --depth 1 https://github.com/MargyT-Team/MargyT.git /tmp/margyt
+          mkdir -p vendor/margyt
+          rsync -a --delete --exclude='.git' /tmp/margyt/ vendor/margyt/
+      - name: Commit imported upstream snapshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add vendor/margyt
+          if git diff --cached --quiet; then
+            echo "No source changes to import."
+            exit 0
+          fi
+          git commit -m "Import MargyT upstream source snapshot"
+          git push origin HEAD:work/prostotok-margyt-adaptation
