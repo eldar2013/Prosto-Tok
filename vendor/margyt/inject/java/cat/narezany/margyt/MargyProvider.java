@@ -28,55 +28,12 @@ public final class MargyProvider extends ContentProvider {
     public boolean onCreate() {
         Context context = getContext();
         if (context == null) return true;
-        Margy.attach(context);
-        try { CrashReports.start(context); } catch(Throwable ignored) {}
-        if (!Version.LITE) SocialLibrary.start();
-        // before TikTok builds the services the ghost stands in front of
-        if (!Version.LITE) Ghost.start();
-        Diary.note("start-up hook ran");
         try {
             Context application = context.getApplicationContext();
             if (application instanceof Application) {
                 ((Application) application).registerActivityLifecycleCallbacks(new SettingsRow());
-                Watch.start((Application) application);
-                Lag.watch();
-                Diary.note("watching for the settings screen");
-            } else {
-                Diary.note("no application yet: " + application);
             }
-        } catch (Throwable error) {
-            // the mod failing to start is not a reason for the app not to
-            Diary.note("hook failed: " + error);
-        }
-        try {
-            Launcher.settle(context);
-        } catch (Throwable error) {
-            Diary.note("icons: " + error);
-        }
-        try {
-            Badges.start(context);
-        } catch (Throwable error) {
-            Diary.note("badges failed to start: " + error);
-        }
-        try {
-            if (!Version.LITE) Streaks.start(context);
-        } catch (Throwable error) {
-            Diary.note("streaks failed to start: " + error);
-        }
-        try {
-            if (!Version.LITE) Updater.start(context);
-        } catch (Throwable error) {
-            Diary.note("updates failed to start: " + error);
-        }
-        try {
-            DevLink.start(context);
-        } catch (Throwable error) {
-            Diary.note("devlink failed to start: " + error);
-        }
-        try {
-            Plugins.startAll(context);
-        } catch (Throwable error) {
-            Diary.note("plugins failed to start: " + error);
+        } catch (Throwable ignored) {
         }
         return true;
     }
