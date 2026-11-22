@@ -87,7 +87,7 @@ final class Text {
     static final String HIDDEN_RESTORE_ALL=pick("Вернуть всё","Повернути все","Restore all");
     static final String HIDDEN_NEXT_PAGE=pick("Изменения применятся при следующей загрузке ленты.","Зміни застосуються під час наступного завантаження стрічки.","Changes apply when the feed next loads.");
 
-    static final String ROW = pick("Настройки MargyT", "Налаштування MargyT", "MargyT settings");
+    static final String ROW = pick("Настройки Prosto Tok", "Налаштування Prosto Tok", "Prosto Tok settings");
     static final String UPDATE_UNAVAILABLE = pick(
             "Источник обновлений MargyT ещё не настроен",
             "Джерело оновлень MargyT ще не налаштовано",
