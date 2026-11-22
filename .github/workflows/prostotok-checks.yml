@@ -38,4 +38,4 @@ jobs:
           test -s vendor/margyt/ADDITIONAL-TERMS.md
           test -s vendor/margyt/margyt/build.py
           grep -q 'LABEL = "Prosto Tok"' vendor/margyt/margyt/build.py
-          grep -q 'SETTINGS_LABEL = "Prosto Tok настройки"' vendor/margyt/margyt/build.py
+          grep -q 'SETTINGS_LABEL = "Prosto Tok"' vendor/margyt/margyt/build.py
