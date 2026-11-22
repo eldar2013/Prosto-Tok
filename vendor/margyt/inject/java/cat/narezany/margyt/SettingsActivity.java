@@ -633,37 +633,53 @@ public class SettingsActivity extends Activity {
     private void rebuild() {
         if (column == null) return;
         column.removeAllViews();
+        settingTargets.clear();
+        sectionTargets.clear();
+
         column.addView(backArrow());
         column.addView(title("Prosto Tok"));
+        column.addView(searchBox());
 
-        TextView notice = new TextView(this);
-        notice.setText(
-                "Prosto Tok — модифицированная сборка TikTok. " +
-                "Она не создана, не одобрена и не поддерживается автором исходного проекта.\n\n" +
-                "Часть исходного кода используется на условиях GNU GPL-3.0 с дополнительными условиями. " +
-                "Производный код Prosto Tok остаётся открытым на тех же условиях.\n\n" +
-                "Основа: MargyT. Автор исходного проекта — narezany. " +
-                "Prosto Tok — самостоятельная модификация и не является официальной сборкой MargyT.");
-        notice.setTextColor(skin.text);
-        notice.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-        notice.setPadding(dp(20), dp(18), dp(20), dp(18));
-        column.addView(wrap(notice));
+        column.addView(section("Основные"));
+        LinearLayout basics = card();
+        basics.addView(actionRow("language", "Подмена региона", "Выбор страны (пока только интерфейс)",
+                () -> Toast.makeText(this, "Настройка региона пока в разработке", Toast.LENGTH_SHORT).show()));
+        basics.addView(line());
+        basics.addView(toggleRow("block", "Убирать рекламу", false, on -> {} , false));
+        basics.addView(line());
+        basics.addView(toggleRow("image", "Убирать фото", false, on -> {} , false));
+        basics.addView(line());
+        basics.addView(toggleRow("play_circle", "Убирать видео", false, on -> {} , false));
+        basics.addView(line());
+        basics.addView(toggleRow("auto_stories", "Убирать истории", false, on -> {} , false));
+        column.addView(wrap(basics));
+
+        column.addView(section("Оформление"));
+        LinearLayout appearance = card();
+        appearance.addView(actionRow("account_circle", "Формы аватарок",
+                "Круг, квадрат и четырёхлистник; остальные формы — в разработке",
+                () -> Toast.makeText(this, "Формы аватарок будут добавлены отдельно", Toast.LENGTH_SHORT).show()));
+        column.addView(wrap(appearance));
+
+        column.addView(section("О проекте"));
+        TextView about = new TextView(this);
+        about.setText("Prosto Tok — неофициальная модификация TikTok. Наша цель — сохранить привычный TikTok и добавить собственное оформление и удобные настройки. Проект находится в разработке.");
+        about.setTextColor(skin.text);
+        about.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        about.setPadding(dp(18), dp(16), dp(18), dp(16));
+        column.addView(wrap(about));
 
         column.addView(section("Авторство и исходный проект"));
-        column.addView(wrap(actionRow("link", "Исходный проект MargyT", "Исходный код и лицензия",
+        TextView source = new TextView(this);
+        source.setText("Prosto Tok использует исходный код MargyT. Автор исходного проекта — narezany. Prosto Tok является самостоятельной модификацией и не создан, не одобрен и не поддерживается автором MargyT. Производный код распространяется на условиях GNU GPL-3.0 с дополнительными условиями.");
+        source.setTextColor(skin.text);
+        source.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        source.setPadding(dp(18), dp(16), dp(18), dp(16));
+        column.addView(wrap(source));
+        column.addView(wrap(actionRow("code", "Исходный проект MargyT", "Код и лицензия",
                 () -> openNoticeLink("https://git.narez.xyz/narezany/MargyT"))));
-        column.addView(wrap(actionRow("send", "Канал автора", null,
-                () -> openNoticeLink("https://t.me/margytiktok"))));
-        column.addView(wrap(actionRow("forum", "Форум проекта", null,
-                () -> openNoticeLink("https://t.me/margeletforum"))));
-        column.addView(wrap(actionRow("person", "Автор: Telegram", null,
+        column.addView(wrap(actionRow("person", "Автор исходного проекта", "narezany",
                 () -> openNoticeLink("https://t.me/narezany"))));
-        column.addView(wrap(actionRow("person", "Автор: TikTok", null,
-                () -> openNoticeLink("https://tiktok.com/@narezany?_r=1&_t=ZT-99hPDJ26hji_"))));
-        column.addView(wrap(actionRow("favorite", "Поддержать автора", "Добровольная поддержка исходного проекта",
-                () -> openNoticeLink("https://boosty.to/ega_link"))));
-        column.addView(wrap(actionRow("favorite", "Другие способы поддержки", null,
-                () -> openNoticeLink("https://yoomoney.ru/to/4100118196133693"))));
         restoreScroll(0);
     }
 
