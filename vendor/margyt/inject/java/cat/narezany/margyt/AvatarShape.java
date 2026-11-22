@@ -37,8 +37,7 @@ public final class AvatarShape {
 
     static final String KEY = "avatar_shape";
     static final String[] ALL = {
-            "circle", "rounded", "square", "cookie", "clover", "burst", "sun",
-            "pentagon", "hexagon", "heart"};
+            "circle", "square", "clover", "sun", "cookie", "burst"};
 
     /** How finely an outline given as a distance in each direction is traced. */
     private static final int POINTS = 144;
@@ -378,64 +377,55 @@ public final class AvatarShape {
         if (known != null) return known;
         Path made = new Path();
         switch (ALL[shape]) {
-            case "rounded":
-                made.addRoundRect(new RectF(-1, -1, 1, 1), 0.44f, 0.44f, Path.Direction.CW);
-                break;
             case "square":
                 made.addRect(-1, -1, 1, 1, Path.Direction.CW);
                 break;
-            case "heart":
-                // Two circles that overlap at the top and a point at the
-                // bottom, filling the square from edge to edge. Drawn as one
-                // curve it left a quarter of the picture unused, and what was
-                // left of a face in it was small.
-                made.arcTo(new RectF(-1f, -1f, 0.1f, 0.1f), -35.1f, -174.9f, true);
-                made.cubicTo(-0.70f, 0.25f, -0.28f, 0.70f, 0f, 1f);
-                made.cubicTo(0.28f, 0.70f, 0.70f, 0.25f, 0.926f, -0.175f);
-                made.arcTo(new RectF(-0.1f, -1f, 1f, 0.1f), 30f, -174.9f, false);
-                made.close();
+            case "clover":
+                scalloped(made, 4, 0.70f);
                 break;
-            case "circle":
-                made.addCircle(0, 0, 1, Path.Direction.CW);
+            case "sun":
+                scalloped(made, 8, 0.78f);
                 break;
-            default:
-                for (int i = 0; i < POINTS; i++) {
-                    double around = 2 * Math.PI * i / POINTS - Math.PI / 2;
-                    float reach = reach(ALL[shape], around + Math.PI / 2);
-                    float px = (float) (reach * Math.cos(around)), py = (float) (reach * Math.sin(around));
-                    if (i == 0) made.moveTo(px, py);
-                    else made.lineTo(px, py);
+            case "burst":
+                scalloped(made, 12, 0.82f);
+                break;
+            case "cookie":
+                // Prosto Launcher COOKIE_9: a clean nine-sided polygon.
+                for (int i = 0; i < 9; i++) {
+                    double angle = 2 * Math.PI * i / 9.0 - Math.PI / 2.0;
+                    float x = (float) Math.cos(angle);
+                    float y = (float) Math.sin(angle);
+                    if (i == 0) made.moveTo(x, y); else made.lineTo(x, y);
                 }
                 made.close();
+                break;
+            default:
+                made.addCircle(0, 0, 1, Path.Direction.CW);
+                break;
         }
         UNIT[shape] = made;
         return made;
     }
 
-    /** How far from the centre a shape reaches in a direction, out of 1. Up is zero. */
-    static float reach(String shape, double around) {
-        switch (shape) {
-            case "cookie": return 0.92f + 0.08f * (float) Math.cos(9 * around);
-            case "clover": return 0.84f + 0.16f * (float) Math.cos(4 * around + Math.PI);
-            case "burst": return 0.90f + 0.10f * (float) Math.cos(12 * around);
-            case "sun": return 0.87f + 0.13f * (float) Math.cos(8 * around);
-            case "pentagon": return sided(5, around);
-            case "hexagon": return sided(6, around);
-            default: return 1f;
+    /** Same rounded scallop geometry as Prosto Launcher icon masks. */
+    private static void scalloped(Path path, int lobes, float innerRadius) {
+        float[][] points = new float[lobes * 2][2];
+        for (int i = 0; i < points.length; i++) {
+            double angle = Math.PI * 2.0 * i / points.length - Math.PI / 2.0;
+            float radius = (i % 2 == 0) ? 1f : innerRadius;
+            points[i][0] = radius * (float) Math.cos(angle);
+            points[i][1] = radius * (float) Math.sin(angle);
         }
-    }
-
-    /** A polygon with its corners taken off, one corner pointing up. */
-    private static float sided(int sides, double around) {
-        double slice = 2 * Math.PI / sides;
-        double within = around % slice;
-        if (within < 0) within += slice;
-        double flat = Math.cos(Math.PI / sides) / Math.cos(within - slice / 2);
-        // the corner is where `flat` reaches 1; a soft minimum against a
-        // little less than that rounds it without moving the sides
-        double cap = 0.93, sharp = 36.0;
-        double soft = -Math.log(Math.exp(-sharp * flat) + Math.exp(-sharp * cap)) / sharp;
-        return (float) (soft / cap);
+        float firstX = (points[points.length - 1][0] + points[0][0]) / 2f;
+        float firstY = (points[points.length - 1][1] + points[0][1]) / 2f;
+        path.moveTo(firstX, firstY);
+        for (int i = 0; i < points.length; i++) {
+            int next = (i + 1) % points.length;
+            float midX = (points[i][0] + points[next][0]) / 2f;
+            float midY = (points[i][1] + points[next][1]) / 2f;
+            path.quadTo(points[i][0], points[i][1], midX, midY);
+        }
+        path.close();
     }
 
     /** A shape filled with one colour, for the list it is chosen from. */
@@ -457,15 +447,11 @@ public final class AvatarShape {
 
     static String nameOf(String shape) {
         switch (shape) {
-            case "rounded": return Text.SHAPE_ROUNDED;
             case "square": return Text.SHAPE_SQUARE;
             case "cookie": return Text.SHAPE_COOKIE;
             case "clover": return Text.SHAPE_CLOVER;
             case "burst": return Text.SHAPE_BURST;
             case "sun": return Text.SHAPE_SUN;
-            case "pentagon": return Text.SHAPE_PENTAGON;
-            case "hexagon": return Text.SHAPE_HEXAGON;
-            case "heart": return Text.SHAPE_HEART;
             default: return Text.SHAPE_CIRCLE;
         }
     }
