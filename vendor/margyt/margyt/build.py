@@ -57,7 +57,7 @@ LABEL = "Prosto Tok"
 # The screen has no launcher entry of its own -- it is opened from the row in
 # TikTok's settings -- but an activity still wants a label: it is what the
 # recents card and any "open with" list show.
-SETTINGS_LABEL = "Prosto Tok настройки"
+SETTINGS_LABEL = "Prosto Tok"
 SETTINGS_THEME = "Theme_DeviceDefault_Light_NoActionBar"
 
 # what a renamed provider authority ends in, so two mods of the same app can
@@ -190,21 +190,8 @@ class Build:
 
         arsc = Arsc(apk.read("resources.arsc"))
 
-        self.say("The accent colour")
-        self.detail("#%06X" % (self.accent & 0xFFFFFF))
-        moved: Dict[int, int] = {}
-        for line in accent_module.bake(apk, arsc, dexpatch.TIKTOK_PINK, self.accent, moved):
-            self.detail(line)
-
-        # the mod is told what was moved and where from, so it can send those
-        # shades on to whatever colour is chosen while the app runs
-        self.write_baked_colour(moved)
-        self.write_emblem()
-        self.write_icons()
-        self.write_version(manifest_module.version_name(manifest), self.test)
-        self.find_anchors(apk)
-        self.write_theme(arsc)
-        self.write_shots(manifest)
+        # Keep TikTok's original theme and all original feature behaviour.
+        # Prosto Tok changes only the app label, launcher artwork and legal-notice entry.
 
         self.say("Building the mod's own dex")
         dex_path = self.tools.compile_dex(
@@ -235,74 +222,19 @@ class Build:
         for where in manifest_module.set_label(manifest, LABEL + " Lite" if self.lite else LABEL):
             self.detail("label on %s" % where)
         self.tools.check_attribute_ids(axml_module.ATTR_IDS)
-        if self.lite:
-            # Lite's settings are a web page, so the mod's are reached from the
-            # sheet behind the three lines of the profile
-            manifest_module.add_activity(manifest, SETTINGS_ACTIVITY, LABEL + " Lite", theme)
-            self.detail("%s declared, reached from Lite's own menu" % SETTINGS_ACTIVITY)
-        else:
-            manifest_module.add_activity(manifest, SETTINGS_ACTIVITY, SETTINGS_LABEL, theme)
-            self.detail("%s declared, reached from TikTok's own settings" % SETTINGS_ACTIVITY)
-        manifest_module.add_activity(manifest, STORE_ACTIVITY, SETTINGS_LABEL, theme)
-        manifest_module.add_activity(manifest, PACKAGE + ".PluginEditorActivity", SETTINGS_LABEL, theme)
-        # where MargyCode asks to be let in: a window over whatever's on screen, 0x01030010 is Theme.Translucent.NoTitleBar
-        manifest_module.add_activity(manifest, PACKAGE + ".DevLinkActivity", SETTINGS_LABEL, 0x01030010)
-        # a .mtp opened from a file manager comes to the mod (Theme.NoDisplay: it only hands the file on)
-        manifest_module.add_file_opener(manifest, PACKAGE + ".PluginOpenActivity", "Плагин MargyT", 0x01030055, "mtp", ["application/octet-stream", "application/zip", "application/x-zip-compressed"])
-        # and a .mtui, an interface style somebody made (UiStyle)
-        manifest_module.add_file_opener(manifest, PACKAGE + ".StyleOpenActivity", "Стиль MargyT", 0x01030055, "mtui", ["application/octet-stream", "application/json", "text/plain"])
-        # Margy Store under its new name and its old one: without this Android 11
-        # and later will not tell the mod whether the store is there at all
-        manifest_module.add_queries(manifest, ["cat.narezany.store", "cat.narezany.patcher", "cat.narezany.margycode"])
-        self.detail("%s declared, the plugin store" % STORE_ACTIVITY)
-
+        manifest_module.add_activity(manifest, SETTINGS_ACTIVITY, SETTINGS_LABEL, theme)
         if not self.lite and not manifest_module.has_activity(manifest, TIKTOK_SETTINGS):
             raise RuntimeError(
-                "%s is not in this apk -- TikTok's settings screen has been "
-                "renamed, and the MargyT row would never appear in it"
+                "%s is not in this apk -- cannot place the Prosto Tok legal-notices entry"
                 % TIKTOK_SETTINGS
             )
-        if manifest_module.add_permission(manifest, INSTALL_PERMISSION):
-            self.detail("asking for %s: the mod installs its own updates"
-                        % INSTALL_PERMISSION.rsplit(".", 1)[-1])
-
-        for permission in ALARM_PERMISSIONS:
-            manifest_module.add_permission(manifest, permission)
-        manifest_module.add_receiver(manifest, ALARM_RECEIVER, ALARM_ACTIONS)
-        self.detail("%s declared: streak sends wake on the system clock" % ALARM_RECEIVER)
-        # what the patcher app asks an installed mod: which mod, which version
-        if os.environ.get("MARGYT_PROFILEABLE") == "1":
-            manifest_module.add_profileable(manifest)
-            self.detail("profileable: simpleperf may attach")
-        manifest_module.add_meta_data(manifest, "cat.narezany.margyt.mod",
-                                      "margyt-lite" if self.lite else "margyt")
-        manifest_module.add_meta_data(manifest, "cat.narezany.margyt.version", self.mod_version())
-        manifest_module.add_provider(
-            manifest, STARTUP_PROVIDER, "%s.margyt" % package)
-        self.detail("%s declared: the mod starts with the app" % STARTUP_PROVIDER)
-        if not self.lite:
-            self.detail("the MargyT row goes on top of %s" % TIKTOK_SETTINGS.rsplit(".", 1)[-1])
-
-        self.say("Provider authorities")
-        shared = manifest_module.shared_authorities(manifest, package)
-        renames = {old: old + AUTHORITY_MARKER for old in shared}
-        if renames:
-            for new in manifest_module.rename_authorities(manifest, renames):
-                self.detail(new)
-            self.detail("%d the package name does not cover, now ours alone"
-                        % len(renames))
-        else:
-            self.detail("every authority is spelled with the package name, nothing to do")
+        renames = {}
 
         master = open(self._default_icon_png(), "rb").read()
         for line in icon_module.replace_everywhere(apk, arsc, manifest, master, self._default_icon_layers()):
             self.detail(line.strip())
 
-        self.say("Icons to choose from")
-        extended = self.add_icon_choices(apk, arsc, manifest)
-        extended = self.add_widget(apk, extended, manifest)
-        self.add_assets(apk)
-        self.add_prerecoloured(apk)
+        # No alternative icons, widgets, plugin packs, or mod assets are shipped.
 
         apk.replace("AndroidManifest.xml", manifest.build())
         if extended is not None:
@@ -310,11 +242,11 @@ class Build:
         elif arsc.dirty:
             apk.replace("resources.arsc", arsc.build(), STORED)
 
-        self.say("Rewriting the bytecode")
+        self.say("Adding the legal-notices screen")
         self.patch_dex_files(apk, api, renames)
 
-        # Include the exact patch coverage in the in-app diagnostics. The
-        # first compile above validates the call surface before dex work starts.
+        # The only bytecode hook retained is the single settings row that opens
+        # the legal-notices screen. All feature hooks are disabled in dexpatch.
         self.write_build_info()
         dex_path = self.tools.compile_dex(
             os.path.join(self.root, "inject", "java"), self.workspace, api,
@@ -322,11 +254,11 @@ class Build:
         )
         injected = open(dex_path, "rb").read()
         if dexpatch.dex_format(injected) != dex_format or dexpatch.missing_targets(injected):
-            raise RuntimeError("build diagnostics changed the injected method surface")
+            raise RuntimeError("minimal legal-notices dex validation failed")
 
         name = dexpatch.next_dex_name(apk.names())
         apk.add(name, injected)
-        self.detail("the mod's classes go in as %s" % name)
+        self.detail("legal-notices screen added as %s" % name)
 
         self.say("Writing the apk")
         # TikTok's shipped ART profile describes the original dex checksums.
