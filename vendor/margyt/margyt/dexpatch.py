@@ -2507,6 +2507,32 @@ def missing_targets(dex: bytes) -> List[str]:
     return [target for target in rewrite_targets() if target not in defined]
 
 
+
+def rewrite_avatar_shapes(root: str, dex: Optional[bytes] = None) -> Dict[str, int]:
+    """Apply only the avatar-mask hooks; leave every other MargyT hook disabled."""
+    counts: Dict[str, int] = {}
+    prepared = [rule for rule in anchored_rules() if AVATAR_SHAPE in rule[3]]
+    for dirpath, _dirs, files in os.walk(root):
+        for name in files:
+            if not name.endswith(".smali"):
+                continue
+            path = os.path.join(dirpath, name)
+            with open(path, encoding="utf-8") as handle:
+                text = handle.read()
+            declaration = text.split("\\n", 1)[0]
+            before = text
+            for anchor, label, pattern, target in prepared:
+                if anchor not in declaration:
+                    continue
+                text, hits = pattern.subn(target, text)
+                if hits:
+                    counts[label] = counts.get(label, 0) + hits
+            if text != before:
+                with open(path, "w", encoding="utf-8") as handle:
+                    handle.write(text)
+    return counts
+
+
 def rewrite_everything(root: str, literals: Optional[Dict[str, str]] = None,
                        dex: Optional[bytes] = None) -> Dict[str, int]:
     """Every rule there is, over a dex that has been taken apart.
@@ -2516,11 +2542,12 @@ def rewrite_everything(root: str, literals: Optional[Dict[str, str]] = None,
     itself as well, a pass that could not find anything in it is not sent to
     read ten thousand files to learn that.
     """
-    # Prosto Tok minimal profile: preserve only the single settings entry
-    # needed to expose the required third-party legal notices. No feature hooks
-    # are applied: TikTok's feed, player, profile, downloads, privacy and theme
-    # behaviour remain the original application's behaviour.
-    return rewrite_settings_row(root, dex)
+    # Prosto Tok keeps TikTok's normal behaviour. The only native visual
+    # feature hook enabled here is the user-requested avatar mask selector.
+    counts = rewrite_settings_row(root, dex)
+    for label, hits in rewrite_avatar_shapes(root, dex).items():
+        counts[label] = counts.get(label, 0) + hits
+    return counts
 
 
 CLIP_CALL = re.compile(r"invoke-virtual(/range)? (\{[^}]*\}), Landroid/content/ClipboardManager;->setPrimaryClip\(Landroid/content/ClipData;\)V")
