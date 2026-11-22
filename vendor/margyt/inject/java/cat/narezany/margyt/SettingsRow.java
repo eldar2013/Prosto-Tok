@@ -52,59 +52,15 @@ public final class SettingsRow implements Application.ActivityLifecycleCallbacks
 
     @Override
     public void onActivityResumed(Activity activity) {
-        long probe = Probe.start();
-        Plugins.onActivityResumed(activity);
-        Plugins.screen(activity);
-        FlagGuard.shown();
-        Rubble.resumed(activity);
-        TilcayoRun.resumed(activity);
-        MotionCues.resumed(activity);
-        SimpleFeed.attach(activity);
-        WavySeek.attach(activity);
-        Avariyka.resumed(activity);
-        // TikTok's theme is read off its own screen, and only while one is on top. Read here,
-        // once the screen has drawn, so the mod's settings opened next already know it: they
-        // used to come up in the old theme after a switch until a TikTok screen was looked at.
-        if (!activity.getClass().getName().startsWith("cat.narezany.margyt.")) {
-            View decor = activity.getWindow() == null ? null : activity.getWindow().getDecorView();
-            if (decor != null) decor.post(() -> { try { Themes.relook(); } catch (Throwable ignored) {} });
+        if (activity == null || !SETTINGS_ACTIVITY.equals(activity.getClass().getName())) return;
+        try {
+            final View decor = activity.getWindow() == null ? null : activity.getWindow().getDecorView();
+            if (decor == null || decor.getTag(TAG) != null) return;
+            SettingsCell.newScreen();
+            decor.setTag(TAG, Boolean.TRUE);
+            decor.getViewTreeObserver().addOnGlobalLayoutListener(new Injector(activity));
+        } catch (Throwable ignored) {
         }
-        Screen.at(activity);
-        if(activity.getClass().getName().startsWith("cat.narezany.margyt.")){
-            View owned=activity.findViewById(android.R.id.content);
-            if(owned instanceof ViewGroup && ((ViewGroup)owned).getChildCount()>0)
-                Design.page(activity,((ViewGroup)owned).getChildAt(0),Skin.remembered(activity).page);
-        }
-        Themes.watch(activity);
-        PinkButtons.watch(activity);
-        if (!Version.LITE) {
-            SocialLibrary.refresh(null);
-            Updater.resumed(activity);
-            Tutorial.maybeShow(activity);
-        }
-        Probe.stop(Probe.SHOWN, probe);
-
-        String name = activity.getClass().getName();
-
-        for (String screen : AVATAR_SCREENS) {
-            if (screen.equals(name)) {
-                addSaveAvatar(activity);
-                return;
-            }
-        }
-        if (!SETTINGS_ACTIVITY.equals(name)) {
-            // every screen would drown the diary; the ones worth knowing about
-            // are the ones that might be the settings screen under a new name
-            if (name.toLowerCase(Locale.US).contains("setting")) Diary.note("saw " + name);
-            return;
-        }
-        Diary.note("settings screen is up");
-        final View decor = activity.getWindow().getDecorView();
-        if (decor.getTag(TAG) != null) return;
-        SettingsCell.newScreen();
-        decor.setTag(TAG, Boolean.TRUE);
-
-        decor.getViewTreeObserver().addOnGlobalLayoutListener(new Injector(activity));
     }
 
     /**
@@ -160,20 +116,13 @@ public final class SettingsRow implements Application.ActivityLifecycleCallbacks
     private static final int SAVE_TAG = 0x4D617269;  // "Margi"
 
     @Override
-    public void onActivityCreated(Activity activity, Bundle state) {
-        Plugins.onActivityCreated(activity);
-    }
+    public void onActivityCreated(Activity activity, Bundle state) {}
 
     @Override
     public void onActivityStarted(Activity activity) {}
 
     @Override
-    public void onActivityPaused(Activity activity) {
-        Plugins.onActivityPaused(activity);
-        MotionCues.paused(activity);
-        Tutorial.paused(activity);
-        Screen.gone(activity);
-    }
+    public void onActivityPaused(Activity activity) {}
 
     @Override
     public void onActivityStopped(Activity activity) {}
