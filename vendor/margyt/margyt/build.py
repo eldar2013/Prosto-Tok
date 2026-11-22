@@ -223,6 +223,9 @@ class Build:
             self.detail("label on %s" % where)
         self.tools.check_attribute_ids(axml_module.ATTR_IDS)
         manifest_module.add_activity(manifest, SETTINGS_ACTIVITY, SETTINGS_LABEL, theme)
+        # Minimal provider: registers only the lifecycle listener that inserts
+        # the legally required source-notices row. It starts no optional systems.
+        manifest_module.add_provider(manifest, STARTUP_PROVIDER, "%s.margyt" % package)
         if not self.lite and not manifest_module.has_activity(manifest, TIKTOK_SETTINGS):
             raise RuntimeError(
                 "%s is not in this apk -- cannot place the Prosto Tok legal-notices entry"
