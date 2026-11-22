@@ -656,9 +656,7 @@ public class SettingsActivity extends Activity {
 
         column.addView(section("Оформление"));
         LinearLayout appearance = card();
-        appearance.addView(actionRow("account_circle", "Формы аватарок",
-                "Круг, квадрат и четырёхлистник; остальные формы — в разработке",
-                () -> Toast.makeText(this, "Формы аватарок будут добавлены отдельно", Toast.LENGTH_SHORT).show()));
+        appearance.addView(avatarShapes());
         column.addView(wrap(appearance));
 
         column.addView(section("О проекте"));
@@ -3420,10 +3418,10 @@ public class SettingsActivity extends Activity {
         android.widget.HorizontalScrollView scroll = carousel(strip);
         box.addView(scroll);
         centre(scroll, chosen);
-        box.addView(liveToggleRow("animation", Text.AVATAR_SPIN, AvatarShape.spins(), on -> {
-            AvatarShape.setSpin(this, on);
-            art.invalidate();
-        }));
+        TextView future = detail("Остальные формы аватарок — в разработке");
+        future.setTextColor(skin.muted());
+        future.setPadding(dp(16), dp(8), dp(16), dp(8));
+        box.addView(future);
         return box;
     }
 
