@@ -216,25 +216,10 @@ public class SettingsActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
-        Margy.attach(this);
-        // drawn in what TikTok's own settings were last seen wearing, which is
-        // the theme when one is on: this screen is opened from that one
+        // This screen exists only for the legally required source and author
+        // notices. It deliberately does not initialise optional mod systems.
         skin = Skin.forSettings(this);
-        Unsaved.look(this);
         dressTheWindow();
-        // the list may still be the one cached before this screen existed, so
-        // redraw when the server answers rather than waiting for a tap
-        Badges.tell(badgeUpdates);
-        // a test build is only for the people who paid for it, and whether
-        // this account is one of them is a thing the server knows -- so the
-        // refusal waits for its answer rather than firing on a cold start,
-        // when the list of badges is simply not here yet
-        Mine.ask(() -> {
-            if (isFinishing() || isDestroyed()) return;
-            rebuild();
-            if (Tester.on() && !Tester.allowed()) Tester.refuse(this);
-        });
-        if (Tester.on() && Tester.asked() && !Tester.allowed()) Tester.refuse(this);
 
         ScrollView scroll = page = new ScrollView(this);
         scroll.setBackgroundColor(Color.TRANSPARENT);
@@ -252,13 +237,7 @@ public class SettingsActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         setContentView(root);
-        Design.page(this, root, skin.page);
         rebuild();
-        maybeAskForSupport();
-        if(getIntent().getBooleanExtra("margyt_tutorial",false))root.postDelayed(()->Tutorial.show(this),350L);
-        openPluginFile(getIntent());
-        openStyleFile(getIntent());
-        openStats(getIntent());
     }
 
     private Bundle stats;
@@ -628,7 +607,6 @@ public class SettingsActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        if(Streaks.isEnabled()){StreakAlarm.schedule(this,false);Streaks.round(this);}
         if(root!=null && column!=null)rebuild();
     }
 
@@ -653,115 +631,47 @@ public class SettingsActivity extends Activity {
     // --------------------------------------------------------- the screen
 
     private void rebuild() {
-        navigating=false;
-        collapsing=false;
-        column.animate().withEndAction(null).cancel(); column.setAlpha(1f); column.setTranslationX(0f);
-        revealAnimationUsed = false;
-        boolean animateReveal = revealAnimationRequested;
-        revealAnimationRequested = false;
-        revealAnimationUsed = !animateReveal;
-        final int previousScroll = page == null ? 0 : page.getScrollY();
-        // a plain rebuild is asked for by a change: the pages are built again. Moving
-        // between them (navigate()) keeps them
-        if (!keepPages) built = null;
-        keepPages = false;
-        renderDisclosureKey=null;
+        if (column == null) return;
         column.removeAllViews();
-        topBar = null;
         column.addView(backArrow());
-        if (settingsGroup == DONATE_PAGE) {
-            column.addView(title(Text.DONATE_BANNER));
-            donatePage();
-            showRestartBar();
-            restoreScroll(0);
-            return;
-        }
-        if (settingsGroup == STATS_PAGE) {
-            column.addView(title(Local.of("Статистика видео")));
-            statsPage();
-            restoreScroll(0);
-            return;
-        }
-        if (settingsGroup == COUNTRY_PAGE) {
-            column.addView(title(Local.of("Страна")));
-            countriesPage();
-            restoreScroll(0);
-            return;
-        }
-        if (settingsGroup == FLAGS_PAGE) {
-            column.addView(title(Text.DEV_FLAGS));
-            flagsPage();
-            showRestartBar();
-            restoreScroll(previousScroll);
-            return;
-        }
-        // a shelf with one page opens on it straight away
-        if (settingsGroup != 0 && settingsPage == null && searchQuery.length() == 0) {
-            java.util.List<Shelf> pages = shelvesOf(settingsGroup);
-            if (pages.size() == 1) settingsPage = pages.get(0).id;
-        }
-        Shelf open = shelf(settingsPage);
-        if (open != null && open.group != settingsGroup) { settingsPage = null; open = null; }
-        column.addView(title(settingsGroup == 0 ? (Version.LITE ? "MargyT Lite" : "MargyT") : open != null ? open.title : groupName(settingsGroup)));
-        if(settingsGroup==0 || searchQuery.length()>0)column.addView(searchBox());
-        if (open != null && open.note.length() > 0) { View lead = lead(open.note); lead.setTag(LEAD, Boolean.TRUE); column.addView(lead); }
-        // a search builds every page as if to show it, reads them, and shows what it found instead
-        final boolean searching = searchQuery.length() > 0;
-        if (settingsGroup == 0 && !searching) {
-            if (Badges.freeStillOpen() && !Mine.hasFree()) column.addView(freeBanner());
-            if (!donateClosed && (!supporter() || bannerAlways())) column.addView(donateBanner());
-            column.addView(groupNavigation());
-            column.addView(wrap(actionRow("info",Local.of("Обучение"),null,() -> Tutorial.show(this))));
-            column.addView(versions());
-            showRestartBar();
-            restoreScroll(0);
-            // the pages are built while this one is looked at, so the first one opened comes at once
-            if (built == null) android.os.Looper.myQueue().addIdleHandler(() -> { prebuild(); return false; });
-            return;
-        }
+        column.addView(title("Prosto Tok"));
 
-        final int contentStart = column.getChildCount();
-        if (built != null) {
-            // the pages were built already: going from one to another only shows a different part
-            for (View page : built) {
-                if (page.getParent() instanceof ViewGroup) ((ViewGroup) page.getParent()).removeView(page);
-                column.addView(page);
-            }
-        } else {
-            sectionTargets.clear();settingTargets.clear();
-            disclosureBodies.clear();disclosureArrows.clear();
-            buildContent();
-            built = new java.util.ArrayList<>();
-            for (int i = contentStart; i < column.getChildCount(); i++) built.add(column.getChildAt(i));
-        }
+        TextView notice = new TextView(this);
+        notice.setText(
+                "Prosto Tok — модифицированная сборка TikTok. " +
+                "Она не создана, не одобрена и не поддерживается автором исходного проекта.\n\n" +
+                "Часть исходного кода используется на условиях GNU GPL-3.0 с дополнительными условиями. " +
+                "Производный код Prosto Tok остаётся открытым на тех же условиях.\n\n" +
+                "Основа: MargyT. Автор исходного проекта — narezany. " +
+                "Prosto Tok — самостоятельная модификация и не является официальной сборкой MargyT.");
+        notice.setTextColor(skin.text);
+        notice.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        notice.setPadding(dp(20), dp(18), dp(20), dp(18));
+        column.addView(wrap(notice));
 
-        if (searching) {
-            java.util.List<Found> index = harvest(contentStart);
-            while (column.getChildCount() > contentStart) column.removeViewAt(contentStart);
-            searchResults(index);
-            restoreScroll(previousScroll);
-            return;
-        }
-        if (settingsGroup != 0 && open == null) {
-            // a shelf's page: the long pages are rows that open them, the pages of one or two
-            // switches are right here, so nothing short is a tap away behind a page of its own
-            java.util.Set<String> small = smallSections(contentStart);
-            java.util.List<Shelf> long_ = new java.util.ArrayList<>();
-            java.util.Set<String> inline = new java.util.HashSet<>();
-            for (Shelf one : shelvesOf(settingsGroup)) {
-                boolean allSmall = one.sections.length > 0;
-                for (String name : one.sections) allSmall &= small.contains(name);
-                if (allSmall) java.util.Collections.addAll(inline, one.sections);
-                else long_.add(one);
-            }
-            int from = contentStart;
-            if (!long_.isEmpty()) { column.addView(shelfList(long_), contentStart); from++; }
-            filterSections(from, inline);
-        } else filterGroup(contentStart);
-        column.addView(versions());
+        column.addView(section("Авторство и исходный проект"));
+        column.addView(wrap(actionRow("link", "Исходный проект MargyT", "Исходный код и лицензия",
+                () -> openNoticeLink("https://git.narez.xyz/narezany/MargyT"))));
+        column.addView(wrap(actionRow("send", "Канал автора", null,
+                () -> openNoticeLink("https://t.me/margytiktok"))));
+        column.addView(wrap(actionRow("forum", "Форум проекта", null,
+                () -> openNoticeLink("https://t.me/margeletforum"))));
+        column.addView(wrap(actionRow("person", "Автор: Telegram", null,
+                () -> openNoticeLink("https://t.me/narezany"))));
+        column.addView(wrap(actionRow("person", "Автор: TikTok", null,
+                () -> openNoticeLink("https://tiktok.com/@narezany?_r=1&_t=ZT-99hPDJ26hji_"))));
+        column.addView(wrap(actionRow("favorite", "Поддержать автора", "Добровольная поддержка исходного проекта",
+                () -> openNoticeLink("https://boosty.to/ega_link"))));
+        column.addView(wrap(actionRow("favorite", "Другие способы поддержки", null,
+                () -> openNoticeLink("https://yoomoney.ru/to/4100118196133693"))));
+        restoreScroll(0);
+    }
 
-        showRestartBar();
-        restoreScroll(previousScroll);
+    private void openNoticeLink(String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (Throwable ignored) {
+        }
     }
 
     /**
