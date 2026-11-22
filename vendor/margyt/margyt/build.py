@@ -619,17 +619,27 @@ class Build:
         return os.path.join(self.root, "branding", "prostotok-icon.png")
 
     def _default_icon_layers(self):
-        """Use the supplied square artwork as the adaptive icon background."""
+        """Keep the complete Prosto Tok mark inside Android's adaptive-icon safe zone."""
         from PIL import Image
         import io as _io
         source = self._default_icon_png()
         with Image.open(source) as picture:
-            image = picture.convert("RGBA").resize((432, 432), Image.LANCZOS)
-        full = _io.BytesIO()
-        image.save(full, "PNG", optimize=True)
-        transparent = _io.BytesIO()
-        Image.new("RGBA", (432, 432), (0, 0, 0, 0)).save(transparent, "PNG", optimize=True)
-        return {"background": full.getvalue(), "foreground": transparent.getvalue(), None: full.getvalue()}
+            artwork = picture.convert("RGBA")
+        # The launcher masks adaptive icons to a circle/squircle. Artwork placed
+        # in the background is cropped by that mask, so the wordmark disappears.
+        # Use a flat brand-colour background and put the complete supplied logo
+        # (including its wordmark) in the central safe area as foreground.
+        background = Image.new("RGBA", (432, 432), (143, 134, 36, 255))
+        safe = artwork.resize((276, 276), Image.LANCZOS)
+        foreground = Image.new("RGBA", (432, 432), (0, 0, 0, 0))
+        foreground.alpha_composite(safe, ((432 - safe.width) // 2,
+                                           (432 - safe.height) // 2))
+        def png(image):
+            out = _io.BytesIO()
+            image.save(out, "PNG", optimize=True)
+            return out.getvalue()
+        return {"background": png(background), "foreground": png(foreground),
+                None: png(foreground)}
 
     def _icon_files(self) -> List[str]:
         return [os.path.join(self.root, "icons", "launcher", key + ".png")
