@@ -1,6 +1,9 @@
 name: Build Prosto Tok APK
 
 on:
+  push:
+    branches:
+      - work/prostotok-margyt-adaptation
   workflow_dispatch:
     inputs:
       accent:
