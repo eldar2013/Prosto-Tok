@@ -237,9 +237,7 @@ class Build:
         # No alternative icons, widgets, plugin packs, or mod assets are shipped.
 
         apk.replace("AndroidManifest.xml", manifest.build())
-        if extended is not None:
-            apk.replace("resources.arsc", extended, STORED)
-        elif arsc.dirty:
+        if arsc.dirty:
             apk.replace("resources.arsc", arsc.build(), STORED)
 
         self.say("Adding the legal-notices screen")
