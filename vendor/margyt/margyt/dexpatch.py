@@ -2519,7 +2519,7 @@ def rewrite_avatar_shapes(root: str, dex: Optional[bytes] = None) -> Dict[str, i
             path = os.path.join(dirpath, name)
             with open(path, encoding="utf-8") as handle:
                 text = handle.read()
-            declaration = text.split("\\n", 1)[0]
+            declaration = text.split("\n", 1)[0]
             before = text
             for anchor, label, pattern, target in prepared:
                 if anchor not in declaration:
