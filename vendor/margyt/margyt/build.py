@@ -914,13 +914,16 @@ class Build:
             self.detail("Requests the server says to drop: %s" % ("asked about, %d place(s)" % kept_requests
                                                                     if kept_requests else "NOT hooked"))
             return
-        # Prosto Tok's safe profile deliberately omits hooks for device-region
-        # spoofing, ad removal, download restrictions/watermarks and server
-        # experiment overrides. Validate only the settings entry point here.
+        # Prosto Tok keeps the official TikTok feed and account behaviour.
+        # Only the settings entry point and the explicitly requested avatar
+        # mask renderer are enabled; region spoofing, ad filtering, downloads,
+        # watermark changes and experiment overrides remain disabled.
         if os.environ.get("PROSTOTOK_SAFE_PROFILE", "1") == "1":
             if not feature_hits[dexpatch.SETTINGS_LABEL]:
                 raise RuntimeError("TikTok settings entry point was not found; refusing an incomplete build")
-            self.detail("Safe profile: visual customisation and settings entry point only")
+            if feature_hits["native avatar shape"] < 3:
+                raise RuntimeError("TikTok avatar mask drawables were not all found; refusing an incomplete build")
+            self.detail("Safe profile: Prosto Tok settings and native avatar masks only")
             return
         missing=[feature for feature,hits in feature_hits.items() if not hits]
         if feature_hits["native offline comments response"] < 4:
