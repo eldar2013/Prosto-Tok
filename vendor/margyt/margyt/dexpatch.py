@@ -2516,18 +2516,11 @@ def rewrite_everything(root: str, literals: Optional[Dict[str, str]] = None,
     itself as well, a pass that could not find anything in it is not sent to
     read ten thousand files to learn that.
     """
-    # Prosto Tok safe profile: keep visual/UI customisation and the settings
-    # entry point, but do not rewrite device identity, feed/ad handling,
-    # download permissions/URLs, experiment flags, request dispatch, or links.
-    # Those upstream hooks are intentionally left dormant in this derivative.
-    counts: Dict[str, int] = {}
-    counts.update(rewrite_settings_row(root, dex))
-    counts.update(rewrite_starts(root, dex))
-    counts.update(rewrite_accent(root))
-    if dex is None or draws_the_loader(dex):
-        counts.update(rewrite_loading(root))
-    counts.update(rewrite_cards(root))
-    return counts
+    # Prosto Tok minimal profile: preserve only the single settings entry
+    # needed to expose the required third-party legal notices. No feature hooks
+    # are applied: TikTok's feed, player, profile, downloads, privacy and theme
+    # behaviour remain the original application's behaviour.
+    return rewrite_settings_row(root, dex)
 
 
 CLIP_CALL = re.compile(r"invoke-virtual(/range)? (\{[^}]*\}), Landroid/content/ClipboardManager;->setPrimaryClip\(Landroid/content/ClipData;\)V")
