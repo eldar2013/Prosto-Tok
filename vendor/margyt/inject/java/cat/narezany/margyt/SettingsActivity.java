@@ -630,54 +630,144 @@ public class SettingsActivity extends Activity {
 
     // --------------------------------------------------------- the screen
 
+    private static final int MENU_HOME = 0;
+    private static final int MENU_BASICS = 91;
+    private static final int MENU_APPEARANCE = 92;
+    private static final int MENU_ABOUT = 93;
+    private static final int MENU_CREDITS = 94;
+
+    /** A single large tile on the Prosto Tok home screen. */
+    private View homeCategory(String glyph, String heading, String note, int destination) {
+        LinearLayout tile = new LinearLayout(this);
+        tile.setOrientation(LinearLayout.HORIZONTAL);
+        tile.setGravity(Gravity.CENTER_VERTICAL);
+        tile.setPadding(dp(20), dp(18), dp(20), dp(18));
+        tile.setMinimumHeight(dp(104));
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(0xFF918923);
+        background.setCornerRadius(dp(30));
+        tile.setBackground(new android.graphics.drawable.RippleDrawable(
+                android.content.res.ColorStateList.valueOf(0x33FFFFFF), background, null));
+
+        View symbol = icon(glyph, false, 52);
+        tile.addView(symbol, new LinearLayout.LayoutParams(dp(56), dp(56)));
+        LinearLayout words = new LinearLayout(this);
+        words.setOrientation(LinearLayout.VERTICAL);
+        words.setPadding(dp(16), 0, dp(8), 0);
+        TextView title = label(heading);
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        words.addView(title);
+        if (note != null && note.length() > 0) {
+            TextView subtitle = detail(note);
+            subtitle.setTextColor(0xFFECE8C8);
+            words.addView(subtitle);
+        }
+        tile.addView(words, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        tile.addView(away());
+        tile.setContentDescription(heading + (note == null ? "" : ". " + note));
+        Motion.touch(tile);
+        tile.setOnClickListener(v -> {
+            if (navigating) return;
+            navigating = true;
+            Motion.navigate(column, 1f, () -> {
+                settingsGroup = destination;
+                settingsPage = null;
+                searchQuery = "";
+                page.scrollTo(0, 0);
+                rebuild();
+                navigating = false;
+            });
+        });
+        return tile;
+    }
+
+    private void homeMenu() {
+        column.addView(wrap(homeCategory("home", "Основные",
+                "Регион и переключатели контента", MENU_BASICS)));
+        column.addView(wrap(homeCategory("palette", "Оформление",
+                "Формы аватарок и внешний вид", MENU_APPEARANCE)));
+        column.addView(wrap(homeCategory("info", "О проекте",
+                "Что такое Prosto Tok", MENU_ABOUT)));
+        column.addView(wrap(homeCategory("copyright", "Авторство и исходный проект",
+                "Авторы, лицензия и исходный код", MENU_CREDITS)));
+    }
+
+    private void basicsPage() {
+        column.addView(section("Основные"));
+        LinearLayout basics = card();
+        basics.addView(actionRow("language", "Подмена региона", "Выбор страны",
+                () -> Toast.makeText(this, "Подмена региона пока не подключена", Toast.LENGTH_SHORT).show()));
+        basics.addView(line());
+        basics.addView(toggleRow("block", "Убирать рекламу", false, on -> {}, false));
+        basics.addView(line());
+        basics.addView(toggleRow("image", "Убирать фото", false, on -> {}, false));
+        basics.addView(line());
+        basics.addView(toggleRow("play_circle", "Убирать видео", false, on -> {}, false));
+        basics.addView(line());
+        basics.addView(toggleRow("auto_stories", "Убирать истории", false, on -> {}, false));
+        column.addView(wrap(basics));
+    }
+
+    private void appearancePage() {
+        column.addView(section("Оформление"));
+        LinearLayout appearance = card();
+        appearance.addView(avatarShapes());
+        column.addView(wrap(appearance));
+        column.addView(wrap(quiet("Остальные формы аватарок — в разработке.")));
+    }
+
+    private void aboutPage() {
+        column.addView(section("О проекте"));
+        TextView about = new TextView(this);
+        about.setText("Prosto Tok — неофициальная модификация TikTok. Наша цель — сохранить привычный TikTok и добавить собственное оформление и удобные настройки. Проект развивается постепенно, а основные функции TikTok остаются основой приложения.");
+        about.setTextColor(skin.text);
+        about.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        about.setLineSpacing(dp(3), 1.05f);
+        about.setPadding(dp(20), dp(18), dp(20), dp(18));
+        column.addView(wrap(about));
+    }
+
+    private void creditsPage() {
+        column.addView(section("Авторство и исходный проект"));
+        TextView source = new TextView(this);
+        source.setText("Prosto Tok использует исходный проект MargyT. Автор оригинального проекта — narezany. Prosto Tok является самостоятельной модификацией и не создан, не одобрен и не поддерживается автором исходного проекта. Производный код распространяется на условиях GNU GPL-3.0 с дополнительными условиями.");
+        source.setTextColor(skin.text);
+        source.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+        source.setLineSpacing(dp(3), 1.05f);
+        source.setPadding(dp(20), dp(18), dp(20), dp(18));
+        column.addView(wrap(source));
+        column.addView(wrap(actionRow("code", "Исходный проект", "MargyT · код и лицензия",
+                () -> openNoticeLink("https://git.narez.xyz/narezany/MargyT"))));
+        column.addView(wrap(actionRow("person", "Автор исходного проекта", "narezany",
+                () -> openNoticeLink("https://t.me/narezany"))));
+    }
+
     private void rebuild() {
         if (column == null) return;
         column.removeAllViews();
         settingTargets.clear();
         sectionTargets.clear();
+        topBar = null;
 
         column.addView(backArrow());
         column.addView(title("Prosto Tok"));
         column.addView(searchBox());
 
-        column.addView(section("Основные"));
-        LinearLayout basics = card();
-        basics.addView(actionRow("language", "Подмена региона", "Выбор страны (пока только интерфейс)",
-                () -> Toast.makeText(this, "Настройка региона пока в разработке", Toast.LENGTH_SHORT).show()));
-        basics.addView(line());
-        basics.addView(toggleRow("block", "Убирать рекламу", false, on -> {} , false));
-        basics.addView(line());
-        basics.addView(toggleRow("image", "Убирать фото", false, on -> {} , false));
-        basics.addView(line());
-        basics.addView(toggleRow("play_circle", "Убирать видео", false, on -> {} , false));
-        basics.addView(line());
-        basics.addView(toggleRow("auto_stories", "Убирать истории", false, on -> {} , false));
-        column.addView(wrap(basics));
-
-        column.addView(section("Оформление"));
-        LinearLayout appearance = card();
-        appearance.addView(avatarShapes());
-        column.addView(wrap(appearance));
-
-        column.addView(section("О проекте"));
-        TextView about = new TextView(this);
-        about.setText("Prosto Tok — неофициальная модификация TikTok. Наша цель — сохранить привычный TikTok и добавить собственное оформление и удобные настройки. Проект находится в разработке.");
-        about.setTextColor(skin.text);
-        about.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-        about.setPadding(dp(18), dp(16), dp(18), dp(16));
-        column.addView(wrap(about));
-
-        column.addView(section("Авторство и исходный проект"));
-        TextView source = new TextView(this);
-        source.setText("Prosto Tok использует исходный код MargyT. Автор исходного проекта — narezany. Prosto Tok является самостоятельной модификацией и не создан, не одобрен и не поддерживается автором MargyT. Производный код распространяется на условиях GNU GPL-3.0 с дополнительными условиями.");
-        source.setTextColor(skin.text);
-        source.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-        source.setPadding(dp(18), dp(16), dp(18), dp(16));
-        column.addView(wrap(source));
-        column.addView(wrap(actionRow("code", "Исходный проект MargyT", "Код и лицензия",
-                () -> openNoticeLink("https://git.narez.xyz/narezany/MargyT"))));
-        column.addView(wrap(actionRow("person", "Автор исходного проекта", "narezany",
-                () -> openNoticeLink("https://t.me/narezany"))));
+        if (settingsGroup == MENU_HOME) {
+            homeMenu();
+        } else if (settingsGroup == MENU_BASICS) {
+            basicsPage();
+        } else if (settingsGroup == MENU_APPEARANCE) {
+            appearancePage();
+        } else if (settingsGroup == MENU_ABOUT) {
+            aboutPage();
+        } else if (settingsGroup == MENU_CREDITS) {
+            creditsPage();
+        } else if (settingsGroup == STATS_PAGE) {
+            statsPage();
+        }
         restoreScroll(0);
     }
 
