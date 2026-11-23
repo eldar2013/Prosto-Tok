@@ -700,7 +700,7 @@ public class SettingsActivity extends Activity {
         tile.setTag("prostotok-search:" + (heading + " " + terms).toLowerCase(Locale.ROOT));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        params.bottomMargin = dp(14);
+        params.bottomMargin = dp(28);
         column.addView(wrapped, params);
     }
 
@@ -4611,7 +4611,7 @@ public class SettingsActivity extends Activity {
         input.setBackgroundColor(Color.TRANSPARENT);
         field.addView(input, grow());
         LinearLayout box = new LinearLayout(this);
-        box.setPadding(edge(), dp(4), edge(), dp(8));
+        box.setPadding(edge(), dp(4), edge(), dp(home ? 20 : 8));
         box.addView(sized(field, 56));
         column.addView(box);
 
