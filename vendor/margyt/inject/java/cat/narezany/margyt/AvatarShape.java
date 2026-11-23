@@ -37,7 +37,7 @@ public final class AvatarShape {
 
     static final String KEY = "avatar_shape";
     static final String[] ALL = {
-            "circle", "square", "clover", "sun", "cookie", "burst"};
+            "circle", "square", "clover"};
 
     /** How finely an outline given as a distance in each direction is traced. */
     private static final int POINTS = 144;
