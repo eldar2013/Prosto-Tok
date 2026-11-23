@@ -641,23 +641,23 @@ public class SettingsActivity extends Activity {
         LinearLayout tile = new LinearLayout(this);
         tile.setOrientation(LinearLayout.HORIZONTAL);
         tile.setGravity(Gravity.CENTER_VERTICAL);
-        tile.setPadding(dp(20), dp(18), dp(20), dp(18));
-        tile.setMinimumHeight(dp(104));
+        tile.setPadding(dp(16), dp(10), dp(20), dp(10));
+        tile.setMinimumHeight(dp(76));
         GradientDrawable background = new GradientDrawable();
         background.setColor(0xFF918923);
         background.setCornerRadius(dp(30));
         tile.setBackground(new android.graphics.drawable.RippleDrawable(
                 android.content.res.ColorStateList.valueOf(0x33FFFFFF), background, null));
 
-        View symbol = icon(glyph, false, 52);
-        tile.addView(symbol, new LinearLayout.LayoutParams(dp(56), dp(56)));
+        View symbol = icon(glyph, false, 48);
+        tile.addView(symbol, new LinearLayout.LayoutParams(dp(52), dp(52)));
         LinearLayout words = new LinearLayout(this);
         words.setOrientation(LinearLayout.VERTICAL);
         words.setPadding(dp(16), 0, dp(8), 0);
         TextView title = label(heading);
         title.setTextColor(Color.WHITE);
-        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
-        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+        title.setTypeface(Typeface.create("casual", Typeface.NORMAL));
         words.addView(title);
         if (note != null && note.length() > 0) {
             TextView subtitle = detail(note);
@@ -665,7 +665,6 @@ public class SettingsActivity extends Activity {
             words.addView(subtitle);
         }
         tile.addView(words, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        tile.addView(away());
         tile.setContentDescription(heading + (note == null ? "" : ". " + note));
         Motion.touch(tile);
         tile.setOnClickListener(v -> {
@@ -684,14 +683,10 @@ public class SettingsActivity extends Activity {
     }
 
     private void homeMenu() {
-        column.addView(wrap(homeCategory("home", "Основные",
-                "Регион и переключатели контента", MENU_BASICS)));
-        column.addView(wrap(homeCategory("palette", "Оформление",
-                "Формы аватарок и внешний вид", MENU_APPEARANCE)));
-        column.addView(wrap(homeCategory("info", "О проекте",
-                "Что такое Prosto Tok", MENU_ABOUT)));
-        column.addView(wrap(homeCategory("copyright", "Авторство и исходный проект",
-                "Авторы, лицензия и исходный код", MENU_CREDITS)));
+        column.addView(wrap(homeCategory("home", "Основные", null, MENU_BASICS)));
+        column.addView(wrap(homeCategory("palette", "Оформление", null, MENU_APPEARANCE)));
+        column.addView(wrap(homeCategory("info", "О проекте", null, MENU_ABOUT)));
+        column.addView(wrap(homeCategory("copyright", "Авторство и исходный проект", null, MENU_CREDITS)));
     }
 
     private void basicsPage() {
@@ -4572,7 +4567,7 @@ public class SettingsActivity extends Activity {
         fieldBack.setCornerRadius(dp(28));
         field.setBackground(fieldBack);
         ImageView glass = new ImageView(this);
-        glass.setImageDrawable(new Expressive.Magnifier(skin.muted()));
+        glass.setImageDrawable(new Expressive.Magnifier(home ? 0xFF494200 : skin.muted()));
         LinearLayout.LayoutParams glassSize = new LinearLayout.LayoutParams(dp(24), dp(24));
         glassSize.rightMargin = dp(16);
         field.addView(glass, glassSize);
@@ -4731,8 +4726,10 @@ public class SettingsActivity extends Activity {
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(dp(20), dp(4), dp(8), dp(4));
         GradientDrawable background = new GradientDrawable();
-        background.setColor(skin.card);
-        background.setCornerRadius(dp(28));
+        boolean home = settingsGroup == MENU_HOME;
+        background.setColor(home ? 0xFF777039 : skin.card);
+        background.setCornerRadius(dp(home ? 38 : 28));
+        if (home) background.setStroke(dp(6), 0xFF494200);
         row.setBackground(background);
 
         final EditText input = new EditText(this);
@@ -4770,6 +4767,7 @@ public class SettingsActivity extends Activity {
             if (flagQuery.length() > 0) input.setText("");
             look.run();
         });
+        if (home) go.setVisibility(View.GONE);
         row.addView(go, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, dp(40)));
         LinearLayout box = new LinearLayout(this);
@@ -5005,6 +5003,13 @@ public class SettingsActivity extends Activity {
         View button = Expressive.roundButton(this, SettingsGlyph.make("arrow_forward", skin.text),
                 skin.card, (Accent.colour() & 0xFFFFFF) | 0x33000000, skin.text, m3 ? 40 : 48);
         ((ViewGroup) button).getChildAt(0).setScaleX(-1f);
+        if (settingsGroup == MENU_HOME) {
+            GradientDrawable outline = new GradientDrawable();
+            outline.setShape(GradientDrawable.OVAL);
+            outline.setColor(Color.TRANSPARENT);
+            outline.setStroke(dp(1), 0xFF918923);
+            button.setBackground(outline);
+        }
         if (m3) {
             // the app bar's navigation icon: the words of where it goes are an iOS habit
             ((LinearLayout.LayoutParams) button.getLayoutParams()).setMargins(dp(4), dp(4), dp(4), dp(4));
@@ -5073,7 +5078,11 @@ public class SettingsActivity extends Activity {
         view.setTextColor(skin.text);
         if (!Design.frosted() && topBar != null && topBar.getParent() == column) {
             // the name sits in the app bar next to the arrow, at the very top
-            M3Type.titleLarge(view);
+            if (settingsGroup == MENU_HOME) {
+                view.setTypeface(Typeface.create("casual", Typeface.NORMAL));
+                view.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
+                view.setTextColor(Color.WHITE);
+            } else M3Type.titleLarge(view);
             view.setSingleLine(true);
             view.setEllipsize(android.text.TextUtils.TruncateAt.END);
             view.setPadding(dp(4), 0, dp(8), 0);
@@ -5114,7 +5123,7 @@ public class SettingsActivity extends Activity {
      * and the results are real shortcuts into matching setting groups.
      */
     private View searchBox() {
-        if (!Design.frosted() && topBar != null && topBar.getParent() == column) {
+        if (settingsGroup != MENU_HOME && !Design.frosted() && topBar != null && topBar.getParent() == column) {
             final boolean open = searchOpen || searchQuery.length() > 0;
             ImageView button = new ImageView(this);
             button.setImageDrawable(open ? SettingsGlyph.make("close", skin.text) : new Expressive.Magnifier(skin.text));
@@ -5184,9 +5193,12 @@ public class SettingsActivity extends Activity {
         input.setText(searchQuery);
         input.setSelectAllOnFocus(false);
         input.setHint(Text.SEARCH_HINT);
-        input.setHintTextColor(skin.muted());
+        input.setHintTextColor(home ? 0xFFE7E0A4 : skin.muted());
         input.setTextColor(skin.text);
-        if (Design.frosted()) input.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+        if (home) {
+            input.setTextSize(TypedValue.COMPLEX_UNIT_SP, 23);
+            input.setTypeface(Typeface.create("casual", Typeface.NORMAL));
+        } else if (Design.frosted()) input.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         else M3Type.line(input, 16, 0.5f);
         input.setBackgroundColor(android.graphics.Color.TRANSPARENT);
         input.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
