@@ -176,11 +176,9 @@ public class SettingsActivity extends Activity {
     private java.util.List<Shelf> shelvesOf(int group) {
         java.util.List<Shelf> out = new java.util.ArrayList<>();
         for (Shelf one : shelves()) {
-            // These pages expose upstream hooks intentionally disabled in
-            // Prosto Tok's safe profile. Keep them out of the UI until a
-            // separately reviewed implementation exists.
-            if ("region".equals(one.id) || "downloads".equals(one.id)
-                    || "sponsor".equals(one.id)) continue;
+            // Region is enabled in Prosto Tok's safe profile; downloads
+            // and sponsor controls remain hidden until separately reviewed.
+            if ("downloads".equals(one.id) || "sponsor".equals(one.id)) continue;
             if (one.group != group) continue;
             if (Version.LITE) { boolean any = false; for (String section : one.sections) any |= inLite(section); if (!any) continue; }
             out.add(one);
@@ -972,11 +970,6 @@ public class SettingsActivity extends Activity {
         LinearLayout head = card();
         head.addView(switchRow());
         column.addView(wrap(head));
-
-        column.addView(section(Text.COUNTRY));
-        LinearLayout countries = card();
-        countries.addView(countryHead());
-        column.addView(wrap(countries));
 
         column.addView(section(Text.FEED));
         LinearLayout feed = card();
