@@ -918,6 +918,9 @@ class Build:
         # mask renderer are enabled; region spoofing, ad filtering, downloads,
         # watermark changes and experiment overrides remain disabled.
         if os.environ.get("PROSTOTOK_SAFE_PROFILE", "1") == "1":
+            if calls < 1:
+                raise RuntimeError("No telephony region call sites were rewritten; refusing a build without region support")
+            self.detail("Region metadata hooks: %d call sites" % calls)
             if not feature_hits[dexpatch.SETTINGS_LABEL]:
                 raise RuntimeError("TikTok settings entry point was not found; refusing an incomplete build")
             if feature_hits["native avatar shape"] < 3:
