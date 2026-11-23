@@ -3732,6 +3732,10 @@ public class SettingsActivity extends Activity {
     private View icon(String name, boolean toggle, int sizeDp) {
         android.graphics.drawable.Drawable drawable = name.equals("search")
                 ? new Expressive.Magnifier(iconInk()) : SettingsGlyph.make(name, iconInk());
+        if (drawable == null) {
+            Bitmap picture = pictureFor(name);
+            if (picture != null) drawable = new android.graphics.drawable.BitmapDrawable(getResources(), picture);
+        }
         ImageView view = new ImageView(this);
         view.setImageDrawable(drawable);
         view.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
