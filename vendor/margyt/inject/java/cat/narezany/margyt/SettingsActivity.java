@@ -3500,8 +3500,6 @@ public class SettingsActivity extends Activity {
     private View avatarShapes() {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
-        final SettingsArt.Profile art = new SettingsArt.Profile(this, skin);
-        box.addView(art);
         LinearLayout head = row();
         head.addView(icon("account_circle"));
         head.addView(label(Text.AVATAR_SHAPE), grow());
@@ -3536,7 +3534,6 @@ public class SettingsActivity extends Activity {
             chip.setOnClickListener(v -> {
                 if (shape.equals(AvatarShape.chosen())) return;
                 AvatarShape.choose(this, shape);
-                art.shape(shape);
                 named.setText(AvatarShape.nameOf(shape));
                 shapeChips(chips);
                 // a picture already cut keeps its shape until it is cut again
