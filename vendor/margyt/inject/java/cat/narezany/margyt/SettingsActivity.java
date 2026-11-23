@@ -4611,7 +4611,7 @@ public class SettingsActivity extends Activity {
         input.setBackgroundColor(Color.TRANSPARENT);
         field.addView(input, grow());
         LinearLayout box = new LinearLayout(this);
-        box.setPadding(edge(), dp(4), edge(), dp(home ? 20 : 8));
+        box.setPadding(edge(), dp(4), edge(), dp(8));
         box.addView(sized(field, 56));
         column.addView(box);
 
@@ -5210,7 +5210,7 @@ public class SettingsActivity extends Activity {
             @Override public void afterTextChanged(android.text.Editable s) {}
         });
         LinearLayout box = new LinearLayout(this);
-        box.setPadding(edge(), dp(4), edge(), dp(8));
+        box.setPadding(edge(), dp(4), edge(), dp(home ? 20 : 8));
         box.addView(sized(row, home ? 64 : 56));
         return box;
     }
