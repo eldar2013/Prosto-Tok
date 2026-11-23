@@ -88,11 +88,11 @@ final class Skin {
      * draws. Glass and Fluent keep the measured one.
      */
     static Skin forSettings(Context context) {
-        Skin kept = remembered(context);
-        if (Design.frosted()) return kept;
-        int page = Design.pageColour(context);
-        int card = Design.cardColour(context);
-        return new Skin(page, card, kept.text, kept.margin, kept.radius, false);
+        // Prosto Tok's own settings use the olive/yellow palette from the
+        // supplied design reference, independently of TikTok's light/dark mode.
+        float density = context.getResources().getDisplayMetrics().density;
+        return new Skin(0xFF514D22, 0xFF918923, 0xFFFFFFFF,
+                Math.round(16 * density), Math.round(30 * density), false);
     }
 
     /** A detail window follows the actual page below its anchor, including TikTok's own theme choice. */
