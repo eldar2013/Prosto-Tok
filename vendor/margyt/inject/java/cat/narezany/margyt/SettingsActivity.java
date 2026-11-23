@@ -4567,7 +4567,7 @@ public class SettingsActivity extends Activity {
         fieldBack.setCornerRadius(dp(28));
         field.setBackground(fieldBack);
         ImageView glass = new ImageView(this);
-        glass.setImageDrawable(new Expressive.Magnifier(home ? 0xFF494200 : skin.muted()));
+        glass.setImageDrawable(new Expressive.Magnifier(skin.muted()));
         LinearLayout.LayoutParams glassSize = new LinearLayout.LayoutParams(dp(24), dp(24));
         glassSize.rightMargin = dp(16);
         field.addView(glass, glassSize);
@@ -5173,6 +5173,7 @@ public class SettingsActivity extends Activity {
     }
 
     private View searchField() {
+        boolean home = settingsGroup == MENU_HOME;
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
