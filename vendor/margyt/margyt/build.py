@@ -333,8 +333,7 @@ class Build:
         one thing it refuses to do -- so the emblem travels as bytes in a class
         instead, and is decoded once when it is first drawn.
         """
-        source = os.path.join(self.root, "icon_out", "mipmap-xxhdpi",
-                              "ic_launcher_foreground.png")
+        source = os.path.join(self.root, "branding", "prostotok-icon.png")
         with open(source, "rb") as handle:
             png = base64.b64encode(handle.read()).decode("ascii")
         chunks = [png[at:at + 76] for at in range(0, len(png), 76)]
