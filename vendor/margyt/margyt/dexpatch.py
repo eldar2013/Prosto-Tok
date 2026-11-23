@@ -2545,6 +2545,11 @@ def rewrite_everything(root: str, literals: Optional[Dict[str, str]] = None,
     # Prosto Tok keeps TikTok's normal behaviour. The only native visual
     # feature hook enabled here is the user-requested avatar mask selector.
     counts = rewrite_settings_row(root, dex)
+    # Region metadata is the sole additional behavioural hook enabled for
+    # Prosto Tok: route the six TelephonyManager country/operator reads through
+    # Region, which returns the real values while its switch is off.
+    for label, hits in rewrite_smali(root).items():
+        counts[label] = counts.get(label, 0) + hits
     for label, hits in rewrite_avatar_shapes(root, dex).items():
         counts[label] = counts.get(label, 0) + hits
     return counts
