@@ -205,7 +205,7 @@ public final class Margy {
 
     public static boolean isEnabled() {
         SharedPreferences p = prefs();
-        return p != null && p.getBoolean(KEY_ENABLED, true);
+        return p != null && p.getBoolean(KEY_ENABLED, false);
     }
 
     public static void setEnabled(boolean enabled) {
