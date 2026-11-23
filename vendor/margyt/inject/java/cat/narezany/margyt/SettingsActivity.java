@@ -641,7 +641,7 @@ public class SettingsActivity extends Activity {
         LinearLayout tile = new LinearLayout(this);
         tile.setOrientation(LinearLayout.HORIZONTAL);
         tile.setGravity(Gravity.CENTER_VERTICAL);
-        tile.setPadding(dp(16), dp(10), dp(20), dp(10));
+        tile.setPadding(dp(14), dp(10), dp(20), dp(10));
         tile.setMinimumHeight(dp(76));
         GradientDrawable background = new GradientDrawable();
         background.setColor(0xFF918923);
@@ -649,22 +649,34 @@ public class SettingsActivity extends Activity {
         tile.setBackground(new android.graphics.drawable.RippleDrawable(
                 android.content.res.ColorStateList.valueOf(0x33FFFFFF), background, null));
 
-        View symbol = icon(glyph, false, 48);
+        FrameLayout symbol = new FrameLayout(this);
+        GradientDrawable disc = new GradientDrawable();
+        disc.setShape(GradientDrawable.OVAL);
+        disc.setColor(0xFF777039);
+        symbol.setBackground(disc);
+        ImageView picture = new ImageView(this);
+        picture.setImageDrawable(SettingsGlyph.make(glyph, 0xFFFFE500));
+        picture.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        picture.setPadding(dp(8), dp(8), dp(8), dp(8));
+        symbol.addView(picture, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         tile.addView(symbol, new LinearLayout.LayoutParams(dp(52), dp(52)));
+
         LinearLayout words = new LinearLayout(this);
         words.setOrientation(LinearLayout.VERTICAL);
         words.setPadding(dp(16), 0, dp(8), 0);
-        TextView title = label(heading);
-        title.setTextColor(Color.WHITE);
-        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
-        title.setTypeface(Typeface.create("casual", Typeface.NORMAL));
-        words.addView(title);
+        TextView headingView = label(heading);
+        headingView.setTextColor(Color.WHITE);
+        headingView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+        headingView.setTypeface(Typeface.create("casual", Typeface.NORMAL));
+        words.addView(headingView);
         if (note != null && note.length() > 0) {
             TextView subtitle = detail(note);
             subtitle.setTextColor(0xFFECE8C8);
             words.addView(subtitle);
         }
-        tile.addView(words, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        tile.addView(words, new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         tile.setContentDescription(heading + (note == null ? "" : ". " + note));
         Motion.touch(tile);
         tile.setOnClickListener(v -> {
@@ -682,26 +694,63 @@ public class SettingsActivity extends Activity {
         return tile;
     }
 
+    private void addHomeCategory(String glyph, String heading, String terms, int destination) {
+        View wrapped = wrap(homeCategory(glyph, heading, null, destination));
+        View tile = ((ViewGroup) ((ViewGroup) wrapped).getChildAt(0)).getChildAt(0);
+        tile.setTag("prostotok-search:" + (heading + " " + terms).toLowerCase(Locale.ROOT));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.bottomMargin = dp(14);
+        column.addView(wrapped, params);
+    }
+
+    private void filterHomeTiles(View view, String query) {
+        if (view == null) return;
+        Object tag = view.getTag();
+        if (tag instanceof String && ((String) tag).startsWith("prostotok-search:")) {
+            String hay = ((String) tag).substring("prostotok-search:".length());
+            view.setVisibility(query.length() == 0 || hay.contains(query) ? View.VISIBLE : View.GONE);
+            return;
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) filterHomeTiles(group.getChildAt(i), query);
+        }
+    }
+
     private void homeMenu() {
-        column.addView(wrap(homeCategory("home", "Основные", null, MENU_BASICS)));
-        column.addView(wrap(homeCategory("palette", "Оформление", null, MENU_APPEARANCE)));
-        column.addView(wrap(homeCategory("info", "О проекте", null, MENU_ABOUT)));
-        column.addView(wrap(homeCategory("copyright", "Авторство и исходный проект", null, MENU_CREDITS)));
+        addHomeCategory("home", "Основные", "подмена региона реклама фото видео истории", MENU_BASICS);
+        addHomeCategory("palette", "Оформление", "аватарки форма круг квадрат клевер", MENU_APPEARANCE);
+        addHomeCategory("info", "О проекте", "информация описание", MENU_ABOUT);
+        addHomeCategory("copyright", "Авторство и исходный проект", "лицензия автор исходный код", MENU_CREDITS);
+        filterHomeTiles(column, searchQuery);
+    }
+
+    private boolean basicOption(String key) {
+        return getSharedPreferences(Margy.PREFS, MODE_PRIVATE).getBoolean(key, false);
+    }
+
+    private void saveBasicOption(String key, boolean enabled) {
+        getSharedPreferences(Margy.PREFS, MODE_PRIVATE).edit().putBoolean(key, enabled).apply();
     }
 
     private void basicsPage() {
         column.addView(section("Основные"));
         LinearLayout basics = card();
         basics.addView(actionRow("language", "Подмена региона", "Выбор страны",
-                () -> Toast.makeText(this, "Подмена региона пока не подключена", Toast.LENGTH_SHORT).show()));
+                () -> Toast.makeText(this, "Подмена региона пока недоступна в этой сборке", Toast.LENGTH_SHORT).show()));
         basics.addView(line());
-        basics.addView(toggleRow("block", "Убирать рекламу", false, on -> {}, false));
+        basics.addView(toggleRow("block", "Убирать рекламу", basicOption(Feed.KEY),
+                on -> saveBasicOption(Feed.KEY, on), false));
         basics.addView(line());
-        basics.addView(toggleRow("image", "Убирать фото", false, on -> {}, false));
+        basics.addView(toggleRow("image", "Убирать фото", basicOption(Feed.KEY_PHOTOS),
+                on -> saveBasicOption(Feed.KEY_PHOTOS, on), false));
         basics.addView(line());
-        basics.addView(toggleRow("play_circle", "Убирать видео", false, on -> {}, false));
+        basics.addView(toggleRow("play_circle", "Убирать видео", basicOption("hide_videos"),
+                on -> saveBasicOption("hide_videos", on), false));
         basics.addView(line());
-        basics.addView(toggleRow("auto_stories", "Убирать истории", false, on -> {}, false));
+        basics.addView(toggleRow("auto_stories", "Убирать истории", basicOption(Feed.KEY_STORIES),
+                on -> saveBasicOption(Feed.KEY_STORIES, on), false));
         column.addView(wrap(basics));
     }
 
@@ -1238,7 +1287,6 @@ public class SettingsActivity extends Activity {
             diary.addView(line());
             diary.addView(appear(diaryLines()));
         }
-        if (DevMode.isOn()) addDeveloperRows(diary);
         column.addView(wrap(diary));
 
         column.addView(section(Text.THANKS));
@@ -3682,40 +3730,19 @@ public class SettingsActivity extends Activity {
      * by a lobe, when it is on; anything else is a tonal shape that stays put.
      */
     private View icon(String name, boolean toggle, int sizeDp) {
-        if (!Design.frosted()) {
-            // Material 3: a plain 24dp symbol in the on-surface-variant colour, no shape under it
-            android.graphics.drawable.Drawable plain = name.equals("search")
-                    ? new Expressive.Magnifier(iconInk()) : SettingsGlyph.make(name, iconInk());
-            if (plain != null) {
-                android.widget.ImageView view = new android.widget.ImageView(this);
-                view.setImageDrawable(plain);
-                view.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
-                int pad = dp(Math.max(0, (Math.min(sizeDp, 40) - 24) / 2));
-                view.setPadding(pad, pad, pad, pad);
-                LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(dp(Math.min(sizeDp, 40)), dp(Math.min(sizeDp, 40)));
-                size.leftMargin = dp(4);
-                size.rightMargin = dp(16);
-                view.setLayoutParams(size);
-                return view;
-            }
-        }
-        android.graphics.drawable.Drawable vector = name.equals("search")
-                ? new Expressive.Magnifier(0xFFFFFFFF) : SettingsGlyph.make(name, 0xFFFFFFFF);
-        if (vector == null) {
-            Bitmap picture = pictureFor(name);
-            if (picture != null) vector = new android.graphics.drawable.BitmapDrawable(getResources(), picture);
-        }
-        int accent = Accent.colour();
-        int tonal = accentTonal();
-        int ink = accentInk();
-        Expressive.Badge badge = toggle
-                ? new Expressive.Badge(this, shapeFor(name), vector, sizeDp,
-                        Expressive.mix(skin.card, skin.text, 0.14f), accent, skin.muted(), onAccent())
-                : new Expressive.Badge(this, shapeFor(name), vector, sizeDp, tonal, tonal, ink, ink);
-        LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(dp(sizeDp), dp(sizeDp));
-        size.rightMargin = dp(Design.frosted() ? 16 : 12);
-        badge.setLayoutParams(size);
-        return badge;
+        android.graphics.drawable.Drawable drawable = name.equals("search")
+                ? new Expressive.Magnifier(iconInk()) : SettingsGlyph.make(name, iconInk());
+        ImageView view = new ImageView(this);
+        view.setImageDrawable(drawable);
+        view.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        int size = Math.min(sizeDp, 40);
+        int pad = dp(Math.max(0, (size - 24) / 2));
+        view.setPadding(pad, pad, pad, pad);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(size), dp(size));
+        params.leftMargin = dp(4);
+        params.rightMargin = dp(16);
+        view.setLayoutParams(params);
+        return view;
     }
 
     private Bitmap pictureFor(String name) {
@@ -5037,31 +5064,20 @@ public class SettingsActivity extends Activity {
     /** MargyT's launcher icon at the top of the settings: the default (Vice City) one, the mint note if that is missing. */
     private android.graphics.drawable.Drawable launcherIcon() {
         if (launcherIcon == null) {
-            int size = dp(32);
-            android.graphics.Bitmap out = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888);
+            byte[] raw = android.util.Base64.decode(Emblem.PNG, android.util.Base64.DEFAULT);
+            android.graphics.Bitmap logo = android.graphics.BitmapFactory.decodeByteArray(raw, 0, raw.length);
+            if (logo == null) return new android.graphics.drawable.ColorDrawable(0xFF918923);
+            int size = dp(36);
+            android.graphics.Bitmap out = android.graphics.Bitmap.createBitmap(
+                    size, size, android.graphics.Bitmap.Config.ARGB_8888);
             android.graphics.Canvas canvas = new android.graphics.Canvas(out);
-            android.graphics.Paint paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG | android.graphics.Paint.FILTER_BITMAP_FLAG);
-            android.graphics.RectF whole = new android.graphics.RectF(0, 0, size, size);
-            // the icon a fresh install has: the Vice City one, cut to the same rounded square
-            android.graphics.Bitmap vice = Launcher.preview(Launcher.DEFAULT);
-            if (vice != null) {
-                android.graphics.Path round = new android.graphics.Path();
-                round.addRoundRect(whole, size * 0.28f, size * 0.28f, android.graphics.Path.Direction.CW);
-                canvas.clipPath(round);
-                canvas.drawBitmap(vice, null, whole, paint);
-                launcherIcon = out;
-                return new android.graphics.drawable.BitmapDrawable(getResources(), launcherIcon);
-            }
-            paint.setColor(0xFF8DD1B0);
-            canvas.drawRoundRect(whole, size * 0.28f, size * 0.28f, paint);
-            try {
-                byte[] png = android.util.Base64.decode(Emblem.PNG, android.util.Base64.DEFAULT);
-                android.graphics.Bitmap note = android.graphics.BitmapFactory.decodeByteArray(png, 0, png.length);
-                // an adaptive foreground: the drawing is the middle two thirds of it
-                float grow = 1.5f, side = size * grow, at = (size - side) / 2f;
-                canvas.drawBitmap(note, null, new android.graphics.RectF(at, at, at + side, at + side), paint);
-            } catch (Throwable ignored) {
-            }
+            android.graphics.Paint paint = new android.graphics.Paint(
+                    android.graphics.Paint.ANTI_ALIAS_FLAG | android.graphics.Paint.FILTER_BITMAP_FLAG);
+            float scale = Math.min(size / (float) logo.getWidth(), size / (float) logo.getHeight());
+            float width = logo.getWidth() * scale, height = logo.getHeight() * scale;
+            float left = (size - width) / 2f, top = (size - height) / 2f;
+            canvas.drawBitmap(logo, null, new android.graphics.RectF(left, top, left + width, top + height), paint);
+            logo.recycle();
             launcherIcon = out;
         }
         return new android.graphics.drawable.BitmapDrawable(getResources(), launcherIcon);
@@ -5086,7 +5102,6 @@ public class SettingsActivity extends Activity {
             view.setSingleLine(true);
             view.setEllipsize(android.text.TextUtils.TruncateAt.END);
             view.setPadding(dp(4), 0, dp(8), 0);
-            view.setOnClickListener(v -> { Cats.tapped(view); developerTap(); });
             if (settingsGroup == 0) {
                 // the app's own icon in colour before its name, as on the launcher
                 ImageView mark = new ImageView(this);
@@ -5100,8 +5115,13 @@ public class SettingsActivity extends Activity {
             View none = new View(this); none.setVisibility(View.GONE);
             return none;
         }
-        if (Design.frosted()) {
-            view.setTextSize(TypedValue.COMPLEX_UNIT_SP, Design.fluent()?(settingsGroup==0?32:28):settingsGroup == 0 ? 44 : 34);
+        if (settingsGroup == MENU_HOME) {
+            view.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
+            view.setTypeface(Typeface.create("casual", Typeface.NORMAL));
+            view.setTextColor(Color.WHITE);
+            view.setPadding(dp(28), dp(8), dp(24), dp(16));
+        } else if (Design.frosted()) {
+            view.setTextSize(TypedValue.COMPLEX_UNIT_SP, Design.fluent()?28:34);
             view.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
             view.setPadding(dp(28), dp(8), dp(24), dp(16));
         } else {
@@ -5110,10 +5130,6 @@ public class SettingsActivity extends Activity {
             view.setPadding(dp(32), dp(12), dp(24), dp(20));
         }
         // five taps in a row and a cat turns up; one by accident does nothing
-        view.setOnClickListener(v -> {
-            Cats.tapped(view);
-            developerTap();
-        });
         return view;
     }
 
@@ -5123,36 +5139,6 @@ public class SettingsActivity extends Activity {
      * and the results are real shortcuts into matching setting groups.
      */
     private View searchBox() {
-        if (settingsGroup != MENU_HOME && !Design.frosted() && topBar != null && topBar.getParent() == column) {
-            final boolean open = searchOpen || searchQuery.length() > 0;
-            ImageView button = new ImageView(this);
-            button.setImageDrawable(open ? SettingsGlyph.make("close", skin.text) : new Expressive.Magnifier(skin.text));
-            button.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-            button.setPadding(dp(12), dp(12), dp(12), dp(12));
-            GradientDrawable round = new GradientDrawable();
-            round.setShape(GradientDrawable.OVAL);
-            round.setColor(0xFFFFFFFF);
-            button.setBackground(new android.graphics.drawable.RippleDrawable(
-                    android.content.res.ColorStateList.valueOf((skin.text & 0xFFFFFF) | 0x22000000), null, round));
-            button.setContentDescription(Text.SEARCH);
-            button.setOnClickListener(v -> {
-                if (open) { searchOpen = false; hideKeyboard(); runSearch(""); }
-                else { searchOpen = true; rebuild(); }
-            });
-            topBar.addView(button, new LinearLayout.LayoutParams(dp(48), dp(48)));
-            if (!open) { View none = new View(this); none.setVisibility(View.GONE); return none; }
-            View box = searchField();
-            if (searchQuery.length() == 0) {
-                // opened by the magnifier: the keyboard comes with it
-                final EditText field = findEditText(box);
-                if (field != null) field.post(() -> {
-                    field.requestFocus();
-                    android.view.inputmethod.InputMethodManager keys = (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-                    if (keys != null) keys.showSoftInput(field, 0);
-                });
-            }
-            return box;
-        }
         return searchField();
     }
 
@@ -5173,20 +5159,21 @@ public class SettingsActivity extends Activity {
     }
 
     private View searchField() {
-        boolean home = settingsGroup == MENU_HOME;
+        final boolean home = settingsGroup == MENU_HOME;
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(dp(Design.frosted() ? 20 : 16), dp(4), dp(8), dp(4));
+        row.setPadding(dp(home ? 20 : 16), dp(4), dp(16), dp(4));
         GradientDrawable background = new GradientDrawable();
-        background.setColor(skin.card);
-        background.setCornerRadius(dp(28));
+        background.setColor(home ? 0xFF777039 : skin.card);
+        background.setCornerRadius(dp(home ? 38 : 28));
+        if (home) background.setStroke(dp(5), 0xFF494200);
         row.setBackground(background);
 
         ImageView glass = new ImageView(this);
-        glass.setImageDrawable(new Expressive.Magnifier(skin.muted()));
+        glass.setImageDrawable(new Expressive.Magnifier(home ? 0xFF494200 : skin.muted()));
         LinearLayout.LayoutParams glassSize = new LinearLayout.LayoutParams(dp(24), dp(24));
-        glassSize.rightMargin = dp(Design.frosted() ? 12 : 16);
+        glassSize.rightMargin = dp(home ? 16 : 12);
         row.addView(glass, glassSize);
 
         final EditText input = new EditText(this);
@@ -5195,13 +5182,13 @@ public class SettingsActivity extends Activity {
         input.setSelectAllOnFocus(false);
         input.setHint(Text.SEARCH_HINT);
         input.setHintTextColor(home ? 0xFFE7E0A4 : skin.muted());
-        input.setTextColor(skin.text);
+        input.setTextColor(home ? Color.WHITE : skin.text);
         if (home) {
             input.setTextSize(TypedValue.COMPLEX_UNIT_SP, 23);
             input.setTypeface(Typeface.create("casual", Typeface.NORMAL));
         } else if (Design.frosted()) input.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         else M3Type.line(input, 16, 0.5f);
-        input.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        input.setBackgroundColor(Color.TRANSPARENT);
         input.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
         input.setOnEditorActionListener((view, action, event) -> {
             if (action == EditorInfo.IME_ACTION_SEARCH) {
@@ -5210,25 +5197,17 @@ public class SettingsActivity extends Activity {
             }
             return false;
         });
-        row.addView(input, grow());
-
-        TextView go = label(searchQuery.length() == 0 ? Text.SEARCH : Text.SEARCH_CLEAR);
-        go.setTextColor(accentInk());
-        go.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        if (!Design.frosted()) M3Type.line(go, 14, 0.1f);
-        go.setGravity(Gravity.CENTER);
-        go.setPadding(dp(16), 0, dp(16), 0);
-        go.setBackground(Expressive.tile(this, accentTonal(), (Accent.colour() & 0xFFFFFF) | 0x33000000,
-                dp(20), dp(20), dp(Design.frosted() ? 10 : 8)));
-        go.setOnClickListener(v -> {
-            if (searchQuery.length() > 0) runSearch("");
-            else runSearch(input.getText().toString());
+        input.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                searchQuery = s.toString().trim().toLowerCase(Locale.ROOT);
+                if (settingsGroup == MENU_HOME) filterHomeTiles(column, searchQuery);
+            }
+            @Override public void afterTextChanged(android.text.Editable s) {}
         });
-        row.addView(go, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, dp(40)));
         LinearLayout box = new LinearLayout(this);
         box.setPadding(edge(), dp(4), edge(), dp(8));
-        box.addView(sized(row, 56));
+        box.addView(sized(row, home ? 64 : 56));
         return box;
     }
 
