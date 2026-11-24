@@ -218,21 +218,20 @@ public final class Feed {
         boolean live=options!=null && options.getBoolean(KEY_LIVE,false);
         boolean photos=options!=null && options.getBoolean(KEY_PHOTOS,false);
         boolean videos=options!=null && options.getBoolean(KEY_VIDEOS,false);
-        boolean stories=options!=null && options.getBoolean(KEY_STORIES,false);
+        // Stories are intentionally not filtered; the user-facing control is live rooms.
         boolean suggestions=options!=null && options.getBoolean(KEY_SUGGESTIONS,false);
         boolean authors=!FeedBlacklist.items().isEmpty() || !FeedBlacklist.cards().isEmpty();
         // a hashtag somebody blocked is a reason to look at the page too
         boolean others=!Tags.all().isEmpty();
         boolean dated=FeedDates.active();
-        if (!ads && !live && !photos && !videos && !stories && !suggestions && !authors && !others && !dated) {
+        if (!ads && !live && !photos && !videos && !suggestions && !authors && !others && !dated) {
             return Plugins.feed(items);
         }
         try {
             int out=0,index=0;
             List kept=null;
             for(Object item:items) {
-                boolean extra=item instanceof Aweme && ((stories && !socialRepost(item) && Boolean.TRUE.equals(NativeRead.get(item,"getIsTikTokStory")))
-                        || (suggestions && suggestion(item))
+                boolean extra=item instanceof Aweme && ((suggestions && suggestion(item))
                         || (authors && FeedBlacklist.hides(item))
                         || (dated && outOfDates((Aweme)item)));
                 if(extra || unwanted(item,ads,live,photos,videos)) {
