@@ -13,6 +13,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
+import urllib.error
 import urllib.request
 import zipfile
 from typing import Optional
@@ -53,8 +55,27 @@ class Toolchain:
             return path
         self._say("  fetching %s" % name)
         temporary = path + ".part"
-        with urllib.request.urlopen(url) as response, open(temporary, "wb") as out:
-            shutil.copyfileobj(response, out)
+        for attempt in range(5):
+            try:
+                with urllib.request.urlopen(url, timeout=120) as response, open(temporary, "wb") as out:
+                    shutil.copyfileobj(response, out)
+                break
+            except urllib.error.HTTPError as error:
+                if error.code not in (429, 500, 502, 503, 504) or attempt == 4:
+                    raise
+                retry_after = error.headers.get("Retry-After")
+                try:
+                    delay = float(retry_after) if retry_after else float(2 ** attempt)
+                except (TypeError, ValueError):
+                    delay = float(2 ** attempt)
+                self._say("  download temporarily rate-limited; retrying in %s seconds" % delay)
+                time.sleep(min(max(delay, 1.0), 60.0))
+            except urllib.error.URLError:
+                if attempt == 4:
+                    raise
+                delay = float(2 ** attempt)
+                self._say("  download temporarily unavailable; retrying in %s seconds" % delay)
+                time.sleep(delay)
         os.replace(temporary, path)
         return path
 
