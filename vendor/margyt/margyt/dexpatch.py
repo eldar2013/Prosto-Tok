@@ -438,6 +438,22 @@ for anchor in ROUND_DRAWABLES:
 # those calls -- and the story rings' arcs -- says first who is drawing, so the
 # mod can draw it again on the next frame.
 ROUND_DRAWERS = ("LX/1Fnu;", "LX/0HEe;", "LX/0GvU;")
+# Intercept bitmap draws only in the native drawables that build avatar masks.
+BITMAP_OVERLOADS = (
+    ("(Landroid/graphics/Bitmap;Landroid/graphics/Rect;Landroid/graphics/RectF;Landroid/graphics/Paint;)V",
+     "(Landroid/graphics/Canvas;Landroid/graphics/Bitmap;Landroid/graphics/Rect;Landroid/graphics/RectF;Landroid/graphics/Paint;)V"),
+    ("(Landroid/graphics/Bitmap;Landroid/graphics/Rect;Landroid/graphics/Rect;Landroid/graphics/Paint;)V",
+     "(Landroid/graphics/Canvas;Landroid/graphics/Bitmap;Landroid/graphics/Rect;Landroid/graphics/Rect;Landroid/graphics/Paint;)V"),
+    ("(Landroid/graphics/Bitmap;FFLandroid/graphics/Paint;)V",
+     "(Landroid/graphics/Canvas;Landroid/graphics/Bitmap;FFLandroid/graphics/Paint;)V"),
+    ("(Landroid/graphics/Bitmap;Landroid/graphics/Matrix;Landroid/graphics/Paint;)V",
+     "(Landroid/graphics/Canvas;Landroid/graphics/Bitmap;Landroid/graphics/Matrix;Landroid/graphics/Paint;)V"),
+)
+for anchor in ROUND_DRAWERS:
+    for original, replacement in BITMAP_OVERLOADS:
+        ANCHORED_SOURCES.append((anchor, "Landroid/graphics/Canvas;", "drawBitmap",
+            original, replacement, AVATAR_SHAPE))
+        CLASS_ANCHORED_SOURCES.add(anchor)
 for anchor in ROUND_DRAWERS:
     ANCHORED_SOURCES.append((anchor, "Landroid/graphics/Canvas;", "drawPath",
         "(Landroid/graphics/Path;Landroid/graphics/Paint;)V",
@@ -939,7 +955,7 @@ def anchored_rules() -> List[Tuple[str, str, "re.Pattern[str]", str]]:
     for anchor in ROUND_DRAWERS + STORY_RINGS:
         out.append((
             anchor, SPIN_LABEL,
-            re.compile(r"(?m)^(?:%s)?(    invoke-(?:virtual|static)(?:/range)? \{[^}]*\}, (?:Landroid/graphics/Canvas;|%s)->(?:drawPath|clipPath|drawArc)\()"
+            re.compile(r"(?m)^(?:%s)?(    invoke-(?:virtual|static)(?:/range)? \{[^}]*\}, (?:Landroid/graphics/Canvas;|%s)->(?:drawPath|clipPath|drawArc|drawBitmap)\()"
                        % (re.escape(owner), re.escape(AVATAR_SHAPE))),
             owner.replace("\\", "\\\\") + r"\1",
         ))
