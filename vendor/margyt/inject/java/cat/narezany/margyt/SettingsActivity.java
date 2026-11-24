@@ -1,6 +1,8 @@
 package cat.narezany.margyt;
 
 import android.app.Activity;
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -22,6 +24,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.view.animation.LinearInterpolator;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -754,8 +757,82 @@ public class SettingsActivity extends Activity {
         column.addView(section("Оформление"));
         LinearLayout appearance = card();
         appearance.addView(avatarShapes());
+        appearance.addView(line());
+        appearance.addView(iconRotationRow());
         column.addView(wrap(appearance));
-        column.addView(wrap(quiet("Остальные формы аватарок — в разработке.")));
+        column.addView(wrap(quiet("Вращаются только значки интерфейса Prosto Tok. Фотографии профилей и аватары не затрагиваются.")));
+    }
+
+    private static final String KEY_ICON_ROTATION = "rotate_ui_icons";
+    private static final String KEY_ICON_ROTATION_SPEED = "rotate_ui_icons_speed";
+
+    private float iconRotationSpeed() {
+        float speed = getSharedPreferences(Margy.PREFS, MODE_PRIVATE)
+                .getFloat(KEY_ICON_ROTATION_SPEED, 1.0f);
+        return speed == 1.25f || speed == 1.75f || speed == 2.0f ? speed : 1.0f;
+    }
+
+    private void animateUiIcon(ImageView view) {
+        if (!getSharedPreferences(Margy.PREFS, MODE_PRIVATE)
+                .getBoolean(KEY_ICON_ROTATION, false)) return;
+        long duration = Math.max(450L, (long) (3600L / iconRotationSpeed()));
+        ObjectAnimator animator = ObjectAnimator.ofFloat(view, "rotation", 0f, 360f);
+        animator.setDuration(duration);
+        animator.setInterpolator(new LinearInterpolator());
+        animator.setRepeatCount(ValueAnimator.INFINITE);
+        animator.setRepeatMode(ValueAnimator.RESTART);
+        animator.start();
+        view.setTag(animator);
+    }
+
+    private View iconRotationRow() {
+        LinearLayout row = row();
+        View lead = icon("refresh", true, 40);
+        row.addView(lead);
+        row.addView(label("Вращать иконки"), grow());
+
+        final boolean enabled = getSharedPreferences(Margy.PREFS, MODE_PRIVATE)
+                .getBoolean(KEY_ICON_ROTATION, false);
+        if (enabled) {
+            ImageView gear = (ImageView) icon("settings", false, 32);
+            gear.setContentDescription("Настройки скорости вращения");
+            gear.setOnClickListener(v -> chooseIconRotationSpeed());
+            Motion.press(gear);
+            LinearLayout.LayoutParams gearPlace = new LinearLayout.LayoutParams(dp(36), dp(40));
+            gearPlace.leftMargin = dp(4);
+            row.addView(gear, gearPlace);
+        }
+
+        M3Switch toggle = new M3Switch(this);
+        toggle.colours(Accent.colour(), skin.muted(), skin.card);
+        toggle.setChecked(enabled);
+        toggle.setContentDescription("Вращать иконки");
+        toggle.setOnChanged(on -> {
+            getSharedPreferences(Margy.PREFS, MODE_PRIVATE).edit()
+                    .putBoolean(KEY_ICON_ROTATION, on).apply();
+            rebuildAfterSwitchAnimation();
+        });
+        row.addView(toggle);
+        row.setOnClickListener(v -> toggle.performClick());
+        return sized(row, 52);
+    }
+
+    private void chooseIconRotationSpeed() {
+        final String[] labels = {"1.00×", "1.25×", "1.75×", "2.00×"};
+        final float[] speeds = {1.0f, 1.25f, 1.75f, 2.0f};
+        int selected = 0;
+        float current = iconRotationSpeed();
+        for (int i = 0; i < speeds.length; i++) if (speeds[i] == current) selected = i;
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Скорость вращения")
+                .setSingleChoiceItems(labels, selected, (dialog, which) -> {
+                    getSharedPreferences(Margy.PREFS, MODE_PRIVATE).edit()
+                            .putFloat(KEY_ICON_ROTATION_SPEED, speeds[which]).apply();
+                    dialog.dismiss();
+                    rebuildAfterSwitchAnimation();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     private void aboutPage() {
@@ -3754,6 +3831,7 @@ public class SettingsActivity extends Activity {
         int size = Math.min(sizeDp, 40);
         int pad = dp(Math.max(0, (size - 24) / 2));
         view.setPadding(pad, pad, pad, pad);
+        animateUiIcon(view);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(size), dp(size));
         params.leftMargin = dp(4);
         params.rightMargin = dp(16);
