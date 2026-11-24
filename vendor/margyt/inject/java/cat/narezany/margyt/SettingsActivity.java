@@ -735,20 +735,19 @@ public class SettingsActivity extends Activity {
     private void basicsPage() {
         column.addView(section("Основные"));
         LinearLayout basics = card();
-        basics.addView(actionRow("language", "Подмена региона", "Выбор страны",
-                () -> Toast.makeText(this, "Подмена региона пока недоступна в этой сборке", Toast.LENGTH_SHORT).show()));
+        basics.addView(switchRow());
         basics.addView(line());
-        basics.addView(toggleRow("block", "Убирать рекламу", basicOption(Feed.KEY),
-                on -> saveBasicOption(Feed.KEY, on), false));
+        basics.addView(toggleRow("play_circle", Text.HIDE_VIDEOS, Feed.hides(Feed.KEY_VIDEOS),
+                on -> Feed.setHides(Feed.KEY_VIDEOS, on), false));
         basics.addView(line());
-        basics.addView(toggleRow("image", "Убирать фото", basicOption(Feed.KEY_PHOTOS),
-                on -> saveBasicOption(Feed.KEY_PHOTOS, on), false));
+        basics.addView(toggleRow("image", Text.HIDE_PHOTOS, Feed.hides(Feed.KEY_PHOTOS),
+                on -> Feed.setHides(Feed.KEY_PHOTOS, on), false));
         basics.addView(line());
-        basics.addView(toggleRow("play_circle", "Убирать видео", basicOption("hide_videos"),
-                on -> saveBasicOption("hide_videos", on), false));
+        basics.addView(toggleRow("block", Text.HIDE_ADS, Feed.isEnabled(),
+                Feed::setEnabled, false));
         basics.addView(line());
-        basics.addView(toggleRow("auto_stories", "Убирать истории", basicOption(Feed.KEY_STORIES),
-                on -> saveBasicOption(Feed.KEY_STORIES, on), false));
+        basics.addView(toggleRow("sensors_off", Text.HIDE_LIVE, Feed.hides(Feed.KEY_LIVE),
+                on -> Feed.setHides(Feed.KEY_LIVE, on), false));
         column.addView(wrap(basics));
     }
 
@@ -5238,8 +5237,8 @@ public class SettingsActivity extends Activity {
     private void showHiddenItems() {
         Panel panel=Panel.with(this,skin,Text.HIDDEN_ITEMS);
         LinearLayout rows=new LinearLayout(this);rows.setOrientation(LinearLayout.VERTICAL);
-        String[] keys={Feed.KEY,Feed.KEY_LIVE,Feed.KEY_PHOTOS,Feed.KEY_STORIES,Feed.KEY_SUGGESTIONS};
-        String[] labels={Text.HIDE_ADS,Text.HIDE_LIVE,Text.HIDE_PHOTOS,Text.HIDE_STORIES,Text.HIDE_SUGGESTIONS};
+        String[] keys={Feed.KEY,Feed.KEY_LIVE,Feed.KEY_PHOTOS,Feed.KEY_VIDEOS,Feed.KEY_SUGGESTIONS};
+        String[] labels={Text.HIDE_ADS,Text.HIDE_LIVE,Text.HIDE_PHOTOS,Text.HIDE_VIDEOS,Text.HIDE_SUGGESTIONS};
         int count=0;
         for(int i=0;i<keys.length;i++){
             final String key=keys[i];
@@ -5270,7 +5269,7 @@ public class SettingsActivity extends Activity {
             rows.addView(caption(Text.HIDDEN_NEXT_PAGE));
             panel.primary(Text.HIDDEN_RESTORE_ALL,()->{
                 Feed.setEnabled(false);Feed.setHides(Feed.KEY_LIVE,false);Feed.setHides(Feed.KEY_PHOTOS,false);
-                Feed.setHides(Feed.KEY_STORIES,false);Feed.setHides(Feed.KEY_SUGGESTIONS,false);FeedBlacklist.clear();
+                Feed.setHides(Feed.KEY_STORIES,false);Feed.setHides(Feed.KEY_VIDEOS,false);Feed.setHides(Feed.KEY_SUGGESTIONS,false);FeedBlacklist.clear();
                 for(int i=0;i<4;i++)FeedRail.setShown(i,true);
                 rebuild();
             });
