@@ -969,32 +969,34 @@ public class SettingsActivity extends Activity {
         column.addView(section(Text.REGION));
         LinearLayout head = card();
         head.addView(switchRow());
-        column.addView(wrap(head));
-
-        column.addView(section(Text.FEED));
-        LinearLayout feed = card();
-        // the feed as a strip of cards: what is hidden folds out of it
+        head.addView(line());
+        // All feed filters live beside the region switch, as one set of controls.
         final SettingsPictures.Feed strip = new SettingsPictures.Feed(this, skin)
+                .hide(SettingsPictures.Feed.VIDEO, Feed.hides(Feed.KEY_VIDEOS))
                 .hide(SettingsPictures.Feed.AD, Feed.isEnabled())
                 .hide(SettingsPictures.Feed.LIVE, Feed.hides(Feed.KEY_LIVE))
-                .hide(SettingsPictures.Feed.PHOTO, Feed.hides(Feed.KEY_PHOTOS))
-                .hide(SettingsPictures.Feed.STORY, Feed.hides(Feed.KEY_STORIES));
-        feed.addView(strip);
-        feed.addView(toggleRow("visibility_off", Text.HIDE_LIVE, Feed.hides(Feed.KEY_LIVE), on -> {
-            Feed.setHides(Feed.KEY_LIVE, on);
-            strip.hide(SettingsPictures.Feed.LIVE, on).settle();
+                .hide(SettingsPictures.Feed.PHOTO, Feed.hides(Feed.KEY_PHOTOS));
+        head.addView(strip);
+        head.addView(toggleRow("videocam_off", Text.HIDE_VIDEOS, Feed.hides(Feed.KEY_VIDEOS), on -> {
+            Feed.setHides(Feed.KEY_VIDEOS, on);
+            strip.hide(SettingsPictures.Feed.VIDEO, on).settle();
         }));
-        feed.addView(line());
-        feed.addView(toggleRow("image", Text.HIDE_PHOTOS, Feed.hides(Feed.KEY_PHOTOS), on -> {
+        head.addView(line());
+        head.addView(toggleRow("image", Text.HIDE_PHOTOS, Feed.hides(Feed.KEY_PHOTOS), on -> {
             Feed.setHides(Feed.KEY_PHOTOS, on);
             strip.hide(SettingsPictures.Feed.PHOTO, on).settle();
         }));
-        feed.addView(line());
-        feed.addView(liveToggleRow("visibility_off",Text.HIDE_STORIES,Feed.hides(Feed.KEY_STORIES),on->{
-            Feed.setHides(Feed.KEY_STORIES,on);
-            strip.hide(SettingsPictures.Feed.STORY, on).settle();
+        head.addView(line());
+        head.addView(toggleRow("visibility_off", Text.HIDE_ADS, Feed.isEnabled(), on -> {
+            Feed.setEnabled(on);
+            strip.hide(SettingsPictures.Feed.AD, on).settle();
         }));
-        column.addView(wrap(feed));
+        head.addView(line());
+        head.addView(toggleRow("sensors_off", Text.HIDE_LIVE, Feed.hides(Feed.KEY_LIVE), on -> {
+            Feed.setHides(Feed.KEY_LIVE, on);
+            strip.hide(SettingsPictures.Feed.LIVE, on).settle();
+        }));
+        column.addView(wrap(head));
 
         column.addView(section(Text.SIMPLE_FEED));
         LinearLayout simpler = card();
