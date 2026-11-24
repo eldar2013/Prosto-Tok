@@ -3,12 +3,14 @@ package cat.narezany.margyt;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Looper;
 import android.view.Choreographer;
@@ -389,8 +391,30 @@ public final class AvatarShape {
             } catch (Throwable error) {
                 // a shape that cannot turn is drawn standing
             }
-            canvas.drawPath(drawn, paint);
-            if (drawn != path) again(who);
+            Shader shader = paint == null ? null : paint.getShader();
+            if (photoTurning() && shader instanceof BitmapShader) {
+                // TikTok commonly paints the avatar path with a BitmapShader,
+                // not Canvas.drawBitmap. Rotate that shader's local mapping,
+                // leaving the clipping path and its border exactly in place.
+                Matrix original = new Matrix();
+                shader.getLocalMatrix(original);
+                RectF bounds = new RectF();
+                path.computeBounds(bounds, true);
+                Matrix rotation = new Matrix();
+                rotation.setRotate(angle(), bounds.centerX(), bounds.centerY());
+                Matrix transformed = new Matrix();
+                transformed.setConcat(original, rotation);
+                shader.setLocalMatrix(transformed);
+                try {
+                    canvas.drawPath(drawn, paint);
+                } finally {
+                    shader.setLocalMatrix(original);
+                }
+                again(who);
+            } else {
+                canvas.drawPath(drawn, paint);
+                if (drawn != path) again(who);
+            }
         }
     }
 
