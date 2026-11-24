@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Looper;
@@ -186,7 +187,8 @@ public final class AvatarShape {
     // ------------------------------------------------------------ the spin
 
     static final String SPIN_KEY = "avatar_spin";
-    /** One turn of the shape takes this long. */
+    static final String SPIN_SPEED_KEY = "avatar_spin_speed";
+    /** One turn at 1.00× takes this long. */
     private static final long TURN = 9000;
 
     /** -1 until the setting has been read. */
@@ -224,13 +226,97 @@ public final class AvatarShape {
     }
 
     /** How far round the shape is now, in degrees. Every avatar on the screen is at the same place. */
-    static float angle() {
-        return (AnimationUtils.currentAnimationTimeMillis() % TURN) * 360f / TURN;
+    static float speed() {
+        Context context = Margy.context();
+        if (context == null) return 1f;
+        try {
+            float value = context.getSharedPreferences(Margy.PREFS, Context.MODE_PRIVATE)
+                    .getFloat(SPIN_SPEED_KEY, 1f);
+            return value == 1.25f || value == 1.75f || value == 2f ? value : 1f;
+        } catch (Throwable ignored) {
+            return 1f;
+        }
     }
 
-    /** Whether there is anything to turn: a circle turned is the same circle. */
+    static void setSpeed(Context context, float value) {
+        if (value != 1.25f && value != 1.75f && value != 2f) value = 1f;
+        context.getSharedPreferences(Margy.PREFS, Context.MODE_PRIVATE).edit()
+                .putFloat(SPIN_SPEED_KEY, value).apply();
+    }
+
+    /** The photo and, when enabled, its outline share one animation clock. */
+    static float angle() {
+        return ((AnimationUtils.currentAnimationTimeMillis() % TURN) * 360f * speed() / TURN) % 360f;
+    }
+
+    /** Whether there is anything to turn: a circle's outline is unchanged. */
     static boolean turning() {
         return index() > 0 && spins();
+    }
+
+    /** Whether the bitmap inside an avatar should rotate, whatever its mask. */
+    private static boolean photoTurning() {
+        return spins();
+    }
+
+    private static int beginPhotoTurn(Canvas canvas, float cx, float cy) {
+        if (!photoTurning()) return -1;
+        int save = canvas.save();
+        canvas.rotate(angle(), cx, cy);
+        return save;
+    }
+
+    private static void endPhotoTurn(Canvas canvas, int save, Object who) {
+        if (save < 0) return;
+        canvas.restoreToCount(save);
+        again(who);
+    }
+
+    /** Rotate only the avatar bitmap; the clipping path and its border stay still. */
+    public static void drawBitmap(Canvas canvas, Bitmap bitmap, Rect src, RectF dst, Paint paint) {
+        Object who = takeOwner();
+        if (bitmap == null || dst == null) {
+            canvas.drawBitmap(bitmap, src, dst, paint);
+            return;
+        }
+        int save = beginPhotoTurn(canvas, dst.centerX(), dst.centerY());
+        canvas.drawBitmap(bitmap, src, dst, paint);
+        endPhotoTurn(canvas, save, who);
+    }
+
+    public static void drawBitmap(Canvas canvas, Bitmap bitmap, Rect src, Rect dst, Paint paint) {
+        Object who = takeOwner();
+        if (bitmap == null || dst == null) {
+            canvas.drawBitmap(bitmap, src, dst, paint);
+            return;
+        }
+        int save = beginPhotoTurn(canvas, (dst.left + dst.right) / 2f, (dst.top + dst.bottom) / 2f);
+        canvas.drawBitmap(bitmap, src, dst, paint);
+        endPhotoTurn(canvas, save, who);
+    }
+
+    public static void drawBitmap(Canvas canvas, Bitmap bitmap, float left, float top, Paint paint) {
+        Object who = takeOwner();
+        if (bitmap == null) {
+            canvas.drawBitmap(bitmap, left, top, paint);
+            return;
+        }
+        int save = beginPhotoTurn(canvas, left + bitmap.getWidth() / 2f, top + bitmap.getHeight() / 2f);
+        canvas.drawBitmap(bitmap, left, top, paint);
+        endPhotoTurn(canvas, save, who);
+    }
+
+    public static void drawBitmap(Canvas canvas, Bitmap bitmap, Matrix matrix, Paint paint) {
+        Object who = takeOwner();
+        if (bitmap == null || matrix == null) {
+            canvas.drawBitmap(bitmap, matrix, paint);
+            return;
+        }
+        RectF bounds = new RectF(0, 0, bitmap.getWidth(), bitmap.getHeight());
+        matrix.mapRect(bounds);
+        int save = beginPhotoTurn(canvas, bounds.centerX(), bounds.centerY());
+        canvas.drawBitmap(bitmap, matrix, paint);
+        endPhotoTurn(canvas, save, who);
     }
 
     /** What the image loader calls where it used to empty a path. */
