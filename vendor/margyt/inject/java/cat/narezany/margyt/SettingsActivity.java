@@ -721,7 +721,6 @@ public class SettingsActivity extends Activity {
         addHomeCategory("palette", "Оформление", "аватарки форма круг квадрат клевер", MENU_APPEARANCE);
         addHomeCategory("info", "О проекте", "информация описание", MENU_ABOUT);
         addHomeCategory("copyright", "Авторство и исходный проект", "лицензия автор исходный код", MENU_CREDITS);
-        filterHomeTiles(column, searchQuery);
     }
 
     private boolean basicOption(String key) {
@@ -794,7 +793,6 @@ public class SettingsActivity extends Activity {
 
         column.addView(backArrow());
         column.addView(title("Prosto Tok"));
-        column.addView(searchBox());
 
         if (settingsGroup == MENU_HOME) {
             homeMenu();
