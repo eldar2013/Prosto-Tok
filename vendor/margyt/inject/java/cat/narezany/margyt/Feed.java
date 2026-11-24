@@ -81,7 +81,8 @@ public final class Feed {
 
     private static boolean isVideo(Aweme post) {
         try {
-            // TikTok AwemeType VIDEO is 0. Leave unknown types untouched.
+            // 0 is the ordinary video type. Image-mode posts can also carry
+            // a video-like cover, so exclude every positively identified photo.
             return post.getAwemeType() == 0 && !isPhotos(post);
         } catch (Throwable ignored) {
             return false;
@@ -90,10 +91,27 @@ public final class Feed {
 
     private static boolean isPhotos(Aweme post) {
         try {
-            return post.getPhotoModeImageInfo() != null;
+            if (post.getPhotoModeImageInfo() != null) return true;
         } catch (Throwable ignored) {
-            return false;
         }
+        try {
+            // TikTok's image-mode Aweme type is 150 in the 47.x model.
+            if (post.getAwemeType() == 150) return true;
+        } catch (Throwable ignored) {
+        }
+        try {
+            // Some 47.x photo posts expose their slides through getImages()
+            // even when PhotoModeImageInfo has not been populated yet.
+            Object images = NativeRead.get(post, "getImages");
+            if (images instanceof java.util.Collection) {
+                return !((java.util.Collection) images).isEmpty();
+            }
+            if (images != null && images.getClass().isArray()) {
+                return java.lang.reflect.Array.getLength(images) > 0;
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
     }
 
     /**
