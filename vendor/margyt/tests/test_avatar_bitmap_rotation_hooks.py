@@ -32,6 +32,8 @@ class AvatarBitmapRotationHooksTest(unittest.TestCase):
         self.assertIn("canvas.rotate(angle(), cx, cy)", source)
         self.assertIn("canvas.drawBitmap(bitmap, src, dst, paint)", source)
         self.assertIn("static boolean turning()", source)
+        self.assertIn("static boolean turning() {\n        return false;", source)
+        self.assertIn("// The story ring and mask stay fixed while only the photo turns.", source)
         self.assertIn("private static boolean photoTurning()", source)
 
 
