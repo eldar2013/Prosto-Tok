@@ -20,7 +20,7 @@ class AvatarBitmapRotationHooksTest(unittest.TestCase):
             path.write_text(source, encoding="utf-8")
             counts = rewrite_avatar_shapes(folder)
             patched = path.read_text(encoding="utf-8")
-            self.assertEqual(counts.get("Canvas->drawBitmap"), 1)
+            self.assertEqual(sum(value for key, value in counts.items() if key.startswith("Canvas->drawBitmap")), 1)
             self.assertIn("AvatarShape;->owner(Ljava/lang/Object;)V", patched)
             self.assertIn("AvatarShape;->drawBitmap(Landroid/graphics/Canvas;Landroid/graphics/Bitmap;Landroid/graphics/Rect;Landroid/graphics/RectF;Landroid/graphics/Paint;)V", patched)
 
