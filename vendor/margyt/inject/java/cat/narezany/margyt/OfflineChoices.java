@@ -19,8 +19,6 @@ public final class OfflineChoices {
   for(int count:new int[]{480,600,800,1200,1500,2400})
    if(!result.contains(count))result.add(count);
   if(!result.contains(-2))result.add(-2);
-  if(!result.contains(-3))result.add(-3);
-  if(!result.contains(-4))result.add(-4);
   return result;
  }
  public static boolean validCount(List<?> original,Object value){return original.contains(value)||(value instanceof Integer&&(Integer)value>=1&&(Integer)value<=10000);}
@@ -77,10 +75,9 @@ public final class OfflineChoices {
    if(list.findViewWithTag("margyt-offline-extra")!=null)return;
    Object vm=NativeRead.get(owner,"Jp");Object host=Class.forName("X.0dx4").getMethod("LIZ",Class.forName("androidx.lifecycle.LifecycleOwner")).invoke(null,owner);if(!(host instanceof Activity))return;Activity activity=(Activity)host;
    LinearLayout extra=new LinearLayout(activity);extra.setTag("margyt-offline-extra");extra.setOrientation(1);
-   for(String label:new String[]{Local.of("480 видео"),Local.of("600 видео"),Local.of("800 видео"),Local.of("1200 видео"),Local.of("1500 видео"),Local.of("2400 видео"),Local.of("Своё значение"),Local.of("Сохранять комментарии"),Local.of("Сохранённые комментарии")}){
+   for(String label:new String[]{Local.of("480 видео"),Local.of("600 видео"),Local.of("800 видео"),Local.of("1200 видео"),Local.of("1500 видео"),Local.of("2400 видео"),Local.of("Своё значение")}){
     TextView button=new TextView(activity);button.setText(label);button.setTextColor(Skin.of(root).text);button.setTextSize(15);int pad=(int)(16*activity.getResources().getDisplayMetrics().density);button.setPadding(pad,pad/2,pad,pad/2);
     button.setOnClickListener(v->{try{
-     if(label.equals(Local.of("Сохранять комментарии"))){OfflineComments.settings(activity);return;}if(label.equals(Local.of("Сохранённые комментарии"))){OfflineComments.library(activity);return;}
      if(label.startsWith("480")){select(vm,480);return;}if(label.startsWith("600")){select(vm,600);return;}if(label.startsWith("800")){select(vm,800);return;}if(label.startsWith("1200")){select(vm,1200);return;}if(label.startsWith("1500")){select(vm,1500);return;}if(label.startsWith("2400")){select(vm,2400);return;}
      EditText input=new EditText(activity);input.setSingleLine(true);input.setInputType(InputType.TYPE_CLASS_NUMBER);input.setHint(Local.of("Количество видео: 1–10000"));
      AlertDialog dialog=new AlertDialog.Builder(activity).setTitle(label).setView(input).setNegativeButton(Local.of("Отмена"),null).setPositiveButton(Local.of("Выбрать"),null).create();dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(w->{int n=parse(input.getText().toString());if(n<1){input.setError(Local.of("Введите число от 1 до 10000"));return;}try{select(vm,n);dialog.dismiss();}catch(Exception e){input.setError(Local.of("Не удалось выбрать количество"));}}));dialog.show();
