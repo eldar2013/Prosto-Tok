@@ -3515,14 +3515,23 @@ public class SettingsActivity extends Activity {
         head.addView(named);
         box.addView(sized(head, 52));
 
-        LinearLayout strip = new LinearLayout(this);
         final java.util.List<View> chips = new java.util.ArrayList<View>();
-        View chosen = null;
-        for (final String shape : AvatarShape.ALL) {
+        LinearLayout grid = new LinearLayout(this);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        for (int i = 0; i < AvatarShape.ALL.length; i++) {
+            final String shape = AvatarShape.ALL[i];
+            if (i % 3 == 0) {
+                LinearLayout line = new LinearLayout(this);
+                line.setOrientation(LinearLayout.HORIZONTAL);
+                line.setGravity(Gravity.CENTER);
+                grid.addView(line, new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            }
+            LinearLayout line = (LinearLayout) grid.getChildAt(grid.getChildCount() - 1);
             LinearLayout chip = new LinearLayout(this);
             chip.setOrientation(LinearLayout.VERTICAL);
             chip.setGravity(Gravity.CENTER_HORIZONTAL);
-            chip.setPadding(dp(10), dp(10), dp(10), dp(8));
+            chip.setPadding(dp(6), dp(8), dp(6), dp(8));
             chip.setTag(shape);
             ImageView picture = new ImageView(this);
             picture.setTag("picture");
@@ -3533,32 +3542,31 @@ public class SettingsActivity extends Activity {
             name.setGravity(Gravity.CENTER);
             name.setMaxLines(2);
             name.setTag("name");
-            name.setPadding(0, dp(6), 0, 0);
-            // a width of its own: wrapped to the word, letter spacing cut the last letter off
-            chip.addView(name, new LinearLayout.LayoutParams(dp(76), ViewGroup.LayoutParams.WRAP_CONTENT));
+            name.setPadding(0, dp(5), 0, 0);
+            chip.addView(name, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             chips.add(chip);
-            if (shape.equals(AvatarShape.chosen())) chosen = chip;
             chip.setOnClickListener(v -> {
                 if (shape.equals(AvatarShape.chosen())) return;
                 AvatarShape.choose(this, shape);
                 named.setText(AvatarShape.nameOf(shape));
                 shapeChips(chips);
-                // a picture already cut keeps its shape until it is cut again
                 markChanged();
             });
             Motion.press(chip);
-            LinearLayout.LayoutParams place = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            place.rightMargin = dp(4);
-            strip.addView(chip, place);
+            LinearLayout.LayoutParams place = new LinearLayout.LayoutParams(0,
+                    ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+            place.setMargins(dp(3), dp(2), dp(3), dp(2));
+            line.addView(chip, place);
+        }
+        // Keep every row aligned; the first three original shapes stay together.
+        LinearLayout last = (LinearLayout) grid.getChildAt(grid.getChildCount() - 1);
+        while (last.getChildCount() < 3) {
+            View empty = new View(this);
+            last.addView(empty, new LinearLayout.LayoutParams(0, 1, 1f));
         }
         shapeChips(chips);
-        android.widget.HorizontalScrollView scroll = carousel(strip);
-        box.addView(scroll);
-        centre(scroll, chosen);
-        TextView future = detail("Остальные формы аватарок — в разработке");
-        future.setTextColor(skin.muted());
-        future.setPadding(dp(16), dp(8), dp(16), dp(8));
-        box.addView(future);
+        box.addView(grid);
         return box;
     }
 
