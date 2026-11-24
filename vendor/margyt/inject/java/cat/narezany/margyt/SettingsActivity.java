@@ -2072,10 +2072,25 @@ public class SettingsActivity extends Activity {
         toggle.colours(Accent.colour(), skin.muted(), skin.card);
         toggle.setChecked(Margy.isEnabled());
         toggle.setOnChanged(checked -> {
-            if (lead instanceof Expressive.Badge) ((Expressive.Badge) lead).set(checked, true);
-            Margy.setEnabled(checked);
-            markChanged();
-            rebuildAfterSwitchAnimation();
+            final boolean enabling = checked;
+            String title = enabling
+                    ? "Включить регион Нидерланды?"
+                    : "Выключить подмену региона?";
+            String message = enabling
+                    ? "Prosto Tok будет передавать TikTok данные региона Нидерланды. Для применения изменений потребуется перезапустить приложение."
+                    : "После выключения TikTok снова будет получать реальные данные региона телефона. Лента может вернуться к прежнему региональному контенту. Для применения изменений потребуется перезапустить приложение.";
+            new android.app.AlertDialog.Builder(SettingsActivity.this)
+                    .setTitle(title)
+                    .setMessage(message)
+                    .setNegativeButton("Отмена", (dialog, which) -> rebuildAfterSwitchAnimation())
+                    .setPositiveButton("Продолжить", (dialog, which) -> {
+                        Margy.setEnabled(enabling);
+                        if (lead instanceof Expressive.Badge) ((Expressive.Badge) lead).set(enabling, true);
+                        markChanged();
+                        rebuildAfterSwitchAnimation();
+                    })
+                    .setOnCancelListener(dialog -> rebuildAfterSwitchAnimation())
+                    .show();
         });
         row.addView(toggle);
 
