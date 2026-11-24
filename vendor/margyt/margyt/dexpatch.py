@@ -2508,6 +2508,70 @@ def missing_targets(dex: bytes) -> List[str]:
 
 
 
+
+def rewrite_offline_choices(root: str) -> Dict[str, int]:
+    """Enable only the user's offline video-count controls in the safe build."""
+    counts: Dict[str, int] = {}
+    for dirpath, _dirs, files in os.walk(root):
+        for name in files:
+            if not name.endswith(".smali"):
+                continue
+            path = os.path.join(dirpath, name)
+            with open(path, encoding="utf-8") as handle:
+                text = handle.read()
+            declaration = text.split("\n", 1)[0]
+            before = text
+            if "Lcom/ss/android/ugc/aweme/offlinemode/ui/sheet/OfflineModeSheetPageAssem;" in declaration:
+                def offline_legacy(match):
+                    body = match.group(0)
+                    hook = "    invoke-static/range {p0 .. p0}, Lcat/narezany/margyt/OfflineChoices;->legacy(Ljava/lang/Object;)V\\n"
+                    if hook.strip() not in body:
+                        body, hits = re.subn(r"(?m)^    return-void", hook + "    return-void", body)
+                        if hits:
+                            counts["native offline legacy menu"] = counts.get("native offline legacy menu", 0) + hits
+                    return body
+                text = re.sub(r"(?ms)^\\.method public final onAssemPostCreate\\(\\)V.*?^\\.end method", offline_legacy, text)
+            if "Lcom/ss/android/ugc/aweme/offlinemode/viewmodel/OfflineModeManagerVM;" in declaration:
+                def offline_valid(match):
+                    body = match.group(0)
+                    needle = "invoke-interface {v1, v0}, Ljava/util/List;->contains(Ljava/lang/Object;)Z"
+                    if needle in body:
+                        body = body.replace(needle, "invoke-static {v1, v0}, Lcat/narezany/margyt/OfflineChoices;->validCount(Ljava/util/List;Ljava/lang/Object;)Z")
+                        counts["native offline custom persistence"] = counts.get("native offline custom persistence", 0) + 1
+                    return body
+                text = re.sub(r"(?ms)^\\.method public final d43\\(\\)Z.*?^\\.end method", offline_valid, text)
+            if "LX/0wjq;" in declaration:
+                def offline_native_count(match):
+                    body = match.group(0)
+                    needle = "invoke-interface {v1, v0}, Ljava/util/List;->contains(Ljava/lang/Object;)Z"
+                    if needle in body:
+                        body = body.replace(needle, "invoke-static {v1, v0}, Lcat/narezany/margyt/OfflineChoices;->validCount(Ljava/util/List;Ljava/lang/Object;)Z", 1)
+                        counts["native offline count accepted"] = counts.get("native offline count accepted", 0) + 1
+                    return body
+                text = re.sub(r"(?ms)^\\.method public static LIZ\\(\\)I.*?^\\.end method", offline_native_count, text)
+            if "Lkotlin/jvm/internal/AwS704S0100000_26;" in declaration:
+                def offline_list(match):
+                    body = match.group(0)
+                    hook = "\\n    invoke-static {v1}, Lcat/narezany/margyt/OfflineChoices;->counts(Ljava/util/List;)Ljava/util/List;\\n    move-result-object v1"
+                    needle = re.search(r"invoke-static \\{\\}, LX/0wj1;->LJFF\\(\\)Ljava/util/List;(?:(?:\\s*\\.line \\d+)*)\\s*move-result-object v1", body)
+                    if "OfflineChoices;->counts" not in body and needle:
+                        body = body[:needle.end()] + hook + body[needle.end():]
+                        counts["native offline choices"] = counts.get("native offline choices", 0) + 1
+                    return body
+                text = re.sub(r"(?ms)^\\.method public static final invoke\\$3208\\(Lkotlin/jvm/internal/AwS704S0100000_26;\\)Ljava/lang/Object;.*?^\\.end method", offline_list, text)
+            if "LX/0wiL;" in declaration:
+                def offline_row(match):
+                    body = match.group(0)
+                    if "OfflineChoices;->row" not in body and "    return-object v10" in body:
+                        body = body.replace("    return-object v10", "    invoke-static {v3, v10}, Lcat/narezany/margyt/OfflineChoices;->row(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;\\n    move-result-object v10\\n    check-cast v10, LX/0ldB;\\n    return-object v10")
+                        counts["native offline row"] = counts.get("native offline row", 0) + 1
+                    return body
+                text = re.sub(r"(?ms)^\\.method public final LIZLLL\\(\\)LX/0ldB;.*?^\\.end method", offline_row, text)
+            if text != before:
+                with open(path, "w", encoding="utf-8") as handle:
+                    handle.write(text)
+    return counts
+
 def rewrite_avatar_shapes(root: str, dex: Optional[bytes] = None) -> Dict[str, int]:
     """Apply only the avatar-mask hooks; leave every other MargyT hook disabled."""
     counts: Dict[str, int] = {}
@@ -2542,9 +2606,11 @@ def rewrite_everything(root: str, literals: Optional[Dict[str, str]] = None,
     itself as well, a pass that could not find anything in it is not sent to
     read ten thousand files to learn that.
     """
-    # Prosto Tok keeps TikTok's normal behaviour. The only native visual
-    # feature hook enabled here is the user-requested avatar mask selector.
+    # Prosto Tok keeps TikTok's normal behaviour. Enable only the requested
+    # offline-count controls alongside the native avatar-mask selector.
     counts = rewrite_settings_row(root, dex)
+    for label, hits in rewrite_offline_choices(root).items():
+        counts[label] = counts.get(label, 0) + hits
     # Region metadata is the sole additional behavioural hook enabled for
     # Prosto Tok: route the six TelephonyManager country/operator reads through
     # Region, which returns the real values while its switch is off.
