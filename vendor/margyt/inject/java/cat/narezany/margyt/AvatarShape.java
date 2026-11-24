@@ -148,14 +148,8 @@ public final class AvatarShape {
                     RING_PLACE.setScale(oval.width() / 2f, oval.height() / 2f);
                     RING_PLACE.postTranslate(oval.centerX(), oval.centerY());
                     RING.addPath(unit(shape), RING_PLACE);
-                    // the ring turns with the avatar, so the two stay one shape
+                    // The story ring and mask stay fixed while only the photo turns.
                     float turn = 0;
-                    if (spins()) {
-                        turn = angle();
-                        RING_PLACE.setRotate(turn, oval.centerX(), oval.centerY());
-                        RING.transform(RING_PLACE);
-                        again(who);
-                    }
                     if (Math.abs(sweep) >= 359.5f) {
                         canvas.drawPath(RING, paint);
                         return;
@@ -249,9 +243,9 @@ public final class AvatarShape {
         return ((AnimationUtils.currentAnimationTimeMillis() % TURN) * 360f * speed() / TURN) % 360f;
     }
 
-    /** Whether there is anything to turn: a circle's outline is unchanged. */
+    /** The mask and border stay still; rotation belongs to the bitmap only. */
     static boolean turning() {
-        return index() > 0 && spins();
+        return false;
     }
 
     /** Whether the bitmap inside an avatar should rotate, whatever its mask. */
