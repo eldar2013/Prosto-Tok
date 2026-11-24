@@ -105,6 +105,7 @@ public class SettingsActivity extends Activity {
     /** Stars go as gifts to this account; the link opens it in Telegram. */
     private static final String STARS = "https://t.me/narezany";
 
+    private boolean avatarSpinSpeedOpen;
     private boolean countriesOpen;
     private boolean accentOpen;
     private Dot accentCustomSwatch;
@@ -3566,6 +3567,42 @@ public class SettingsActivity extends Activity {
         }
         shapeChips(chips);
         box.addView(grid);
+
+        LinearLayout spinRow = row();
+        spinRow.addView(icon("refresh"));
+        spinRow.addView(label(Local.of("Вращать фото аватаров")), grow());
+        final M3Switch spinSwitch = new M3Switch(this);
+        spinSwitch.colours(Accent.colour(), skin.muted(), skin.card);
+        spinSwitch.setChecked(AvatarShape.spins(), false);
+        spinSwitch.setOnChanged(on -> {
+            AvatarShape.setSpin(this, on);
+            if (!on) avatarSpinSpeedOpen = false;
+            rebuild();
+        });
+        LinearLayout.LayoutParams spinSize = new LinearLayout.LayoutParams(dp(52), dp(32));
+        spinSize.leftMargin = dp(8);
+        spinRow.addView(spinSwitch, spinSize);
+        if (AvatarShape.spins()) {
+            View gear = icon("settings");
+            gear.setOnClickListener(v -> {
+                avatarSpinSpeedOpen = !avatarSpinSpeedOpen;
+                rebuild();
+            });
+            Motion.press(gear);
+            LinearLayout.LayoutParams gearSize = new LinearLayout.LayoutParams(dp(44), dp(44));
+            gearSize.leftMargin = dp(4);
+            spinRow.addView(gear, gearSize);
+        }
+        box.addView(sized(spinRow, 56));
+        if (AvatarShape.spins() && avatarSpinSpeedOpen) {
+            final float[] spinSpeeds = {1f, 1.25f, 1.75f, 2f};
+            int speedAt = 0;
+            for (int i = 0; i < spinSpeeds.length; i++) {
+                if (Math.abs(AvatarShape.speed() - spinSpeeds[i]) < 0.01f) speedAt = i;
+            }
+            box.addView(segmented(new String[] {"1.00×", "1.25×", "1.75×", "2.00×"}, speedAt,
+                    index -> AvatarShape.setSpeed(this, spinSpeeds[index])));
+        }
         return box;
     }
 
