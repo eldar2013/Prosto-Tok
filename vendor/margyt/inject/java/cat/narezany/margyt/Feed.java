@@ -30,6 +30,7 @@ public final class Feed {
 
     static void reloadSettings(){cached=null;}
     public static final String KEY = "hide_ads";
+    public static final String KEY_VIDEOS = "hide_videos";
     public static final String KEY_LIVE = "hide_live";
     public static final String KEY_PHOTOS = "hide_photos";
     public static final String KEY_STORIES="hide_stories",KEY_SUGGESTIONS="hide_suggestions";
@@ -37,8 +38,12 @@ public final class Feed {
     private static volatile Boolean cached;
 
     public static boolean isEnabled() {
-        // 2.2.2: adverts are always hidden, and that is no longer a switch
-        return true;
+        Boolean known = cached;
+        if (known != null) return known;
+        SharedPreferences prefs = prefs();
+        boolean enabled = prefs != null && prefs.getBoolean(KEY, false);
+        cached = enabled;
+        return enabled;
     }
 
     public static void setEnabled(boolean enabled) {
@@ -69,6 +74,15 @@ public final class Feed {
             if (post.getAwemeType() == LIVE) return true;
             if (post.getLiveId() != 0) return true;
             return post.getRoomFeedCellStruct() != null;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static boolean isVideo(Aweme post) {
+        try {
+            // TikTok AwemeType VIDEO is 0. Leave unknown types untouched.
+            return post.getAwemeType() == 0 && !isPhotos(post);
         } catch (Throwable ignored) {
             return false;
         }
@@ -110,7 +124,7 @@ public final class Feed {
     }
 
     /** Whether this post is one the person asked not to see. */
-    private static boolean unwanted(Object item, boolean ads, boolean live, boolean photos) {
+    private static boolean unwanted(Object item, boolean ads, boolean live, boolean photos, boolean videos) {
         if (!(item instanceof Aweme)) return false;
         Aweme post = (Aweme) item;
         if (mine(post)) return false;
@@ -119,6 +133,7 @@ public final class Feed {
             if (live && isLive(post)) return true;
             if (isLive(post)) return false;   // a room is neither a photo nor a video
             if (photos && isPhotos(post)) return true;
+            if (videos && isVideo(post)) return true;
             if (Tags.blocks(post)) return true;
         } catch (Throwable ignored) {
         }
@@ -202,13 +217,14 @@ public final class Feed {
         boolean ads=isEnabled();SharedPreferences options=prefs();
         boolean live=options!=null && options.getBoolean(KEY_LIVE,false);
         boolean photos=options!=null && options.getBoolean(KEY_PHOTOS,false);
+        boolean videos=options!=null && options.getBoolean(KEY_VIDEOS,false);
         boolean stories=options!=null && options.getBoolean(KEY_STORIES,false);
         boolean suggestions=options!=null && options.getBoolean(KEY_SUGGESTIONS,false);
         boolean authors=!FeedBlacklist.items().isEmpty() || !FeedBlacklist.cards().isEmpty();
         // a hashtag somebody blocked is a reason to look at the page too
         boolean others=!Tags.all().isEmpty();
         boolean dated=FeedDates.active();
-        if (!ads && !live && !photos && !stories && !suggestions && !authors && !others && !dated) {
+        if (!ads && !live && !photos && !videos && !stories && !suggestions && !authors && !others && !dated) {
             return Plugins.feed(items);
         }
         try {
@@ -219,7 +235,7 @@ public final class Feed {
                         || (suggestions && suggestion(item))
                         || (authors && FeedBlacklist.hides(item))
                         || (dated && outOfDates((Aweme)item)));
-                if(extra || unwanted(item,ads,live,photos)) {
+                if(extra || unwanted(item,ads,live,photos,videos)) {
                     if(kept==null){kept=new ArrayList(items.size());kept.addAll(items.subList(0,index));}
                     out++;
                 } else if(kept!=null)kept.add(item);
