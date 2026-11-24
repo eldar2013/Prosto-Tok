@@ -63,7 +63,7 @@ final class Text {
     static final String REVERSE_SPEED=pick("Скорость перемотки назад","Швидкість перемотування назад","Rewind rate");
     static final String BLOCK_AUTHOR=pick("Не предлагать этого автора","Не пропонувати цього автора","Hide this author");
     static final String BLOCK_LIMIT=pick("В списке уже 50 авторов","У списку вже 50 авторів","The list already contains 50 authors");
-    static final String HIDE_STORIES=pick("Скрывать истории","Приховувати історії","Hide stories");
+    // Stories are not a feed filter in Prosto Tok; live rooms have their own switch.
     static final String HIDE_SUGGESTIONS=pick("Скрывать карточки рекомендаций","Приховувати картки рекомендацій","Hide recommendation cards");
     static final String DL_QUALITY=pick("Качество загрузки","Якість завантаження","Download quality");
     static final String DL_NATIVE=pick("Штатное","Стандартна","Original");
@@ -1021,6 +1021,9 @@ final class Text {
 
     static final String HIDE_ADS = pick(
             "Убирать рекламу", "Прибирати рекламу", "Drop the advertisements");
+
+    static final String HIDE_VIDEOS = pick(
+            "Убирать видео", "Прибирати відео", "Hide videos");
 
     // --------------------------------------------------------- the plugins
 
