@@ -16,8 +16,8 @@ public final class OfflineChoices {
  private OfflineChoices() {}
  public static List<?> counts(List<?> original) {
   ArrayList<Object> result=new ArrayList<Object>(original);
-  if(!result.contains(500))result.add(500);
-  if(!result.contains(1000))result.add(1000);
+  for(int count:new int[]{480,600,800,1200,1500,2400})
+   if(!result.contains(count))result.add(count);
   if(!result.contains(-2))result.add(-2);
   if(!result.contains(-3))result.add(-3);
   if(!result.contains(-4))result.add(-4);
@@ -34,13 +34,13 @@ public final class OfflineChoices {
     View.OnClickListener click=view->{if(activity==null||activity.isFinishing())return;if(count==-3)OfflineComments.settings(activity);else OfflineComments.library(activity);};
     return Class.forName("X.0lhy").getConstructor(boolean.class,String.class,Class.forName("X.0GtW"),String.class,View.OnClickListener.class,int.class).newInstance(false,count==-3?Local.of("Сохранять комментарии"):Local.of("Сохранённые комментарии"),null,"",click,0x1b7a);
    }
-   if(count!=500&&count!=1000&&count!=-2)return original;
+   if(count!=-2&&count!=-3&&count!=-4&&count!=480&&count!=600&&count!=800&&count!=1200&&count!=1500&&count!=2400)return original;
    Activity activity=(Activity)field(owner,"LLJJJIL");
    Object vm=field(owner,"LLJJJJ");
    Object state=vm.getClass().getMethod("getState").invoke(vm);
    int selected=(Integer)field(state,"LLJJIJIL");
    boolean automatic=(Boolean)field(state,"LLJJJ");
-   boolean checked=!automatic&&(count==-2?selected>0&&selected!=500&&selected!=1000&&!nativeCount(selected):selected==count);
+   boolean checked=!automatic&&(count==-2?selected>0&&selected!=480&&selected!=600&&selected!=800&&selected!=1200&&selected!=1500&&selected!=2400&&!nativeCount(selected):selected==count);
    String label=count==-2?Local.of("Своё значение")+(checked?" · "+selected+Local.of(" видео"):""):count+Local.of(" видео");
    View.OnClickListener click=view->{
     if(count!=-2){try{select(vm,count);}catch(Exception e){Diary.note("offline select: "+e.getClass().getSimpleName());}return;}
@@ -77,11 +77,11 @@ public final class OfflineChoices {
    if(list.findViewWithTag("margyt-offline-extra")!=null)return;
    Object vm=NativeRead.get(owner,"Jp");Object host=Class.forName("X.0dx4").getMethod("LIZ",Class.forName("androidx.lifecycle.LifecycleOwner")).invoke(null,owner);if(!(host instanceof Activity))return;Activity activity=(Activity)host;
    LinearLayout extra=new LinearLayout(activity);extra.setTag("margyt-offline-extra");extra.setOrientation(1);
-   for(String label:new String[]{Local.of("500 видео"),Local.of("1000 видео"),Local.of("Своё значение"),Local.of("Сохранять комментарии"),Local.of("Сохранённые комментарии")}){
+   for(String label:new String[]{Local.of("480 видео"),Local.of("600 видео"),Local.of("800 видео"),Local.of("1200 видео"),Local.of("1500 видео"),Local.of("2400 видео"),Local.of("Своё значение"),Local.of("Сохранять комментарии"),Local.of("Сохранённые комментарии")}){
     TextView button=new TextView(activity);button.setText(label);button.setTextColor(Skin.of(root).text);button.setTextSize(15);int pad=(int)(16*activity.getResources().getDisplayMetrics().density);button.setPadding(pad,pad/2,pad,pad/2);
     button.setOnClickListener(v->{try{
      if(label.equals(Local.of("Сохранять комментарии"))){OfflineComments.settings(activity);return;}if(label.equals(Local.of("Сохранённые комментарии"))){OfflineComments.library(activity);return;}
-     if(label.startsWith("500")){select(vm,500);return;}if(label.startsWith("1000")){select(vm,1000);return;}
+     if(label.startsWith("480")){select(vm,480);return;}if(label.startsWith("600")){select(vm,600);return;}if(label.startsWith("800")){select(vm,800);return;}if(label.startsWith("1200")){select(vm,1200);return;}if(label.startsWith("1500")){select(vm,1500);return;}if(label.startsWith("2400")){select(vm,2400);return;}
      EditText input=new EditText(activity);input.setSingleLine(true);input.setInputType(InputType.TYPE_CLASS_NUMBER);input.setHint(Local.of("Количество видео: 1–10000"));
      AlertDialog dialog=new AlertDialog.Builder(activity).setTitle(label).setView(input).setNegativeButton(Local.of("Отмена"),null).setPositiveButton(Local.of("Выбрать"),null).create();dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(w->{int n=parse(input.getText().toString());if(n<1){input.setError(Local.of("Введите число от 1 до 10000"));return;}try{select(vm,n);dialog.dismiss();}catch(Exception e){input.setError(Local.of("Не удалось выбрать количество"));}}));dialog.show();
     }catch(Exception e){Diary.note("offline legacy choice: "+e.getClass().getSimpleName());}});extra.addView(button);
