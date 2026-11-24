@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from margyt.dexpatch import rewrite_anchored
+from margyt.dexpatch import rewrite_anchored, rewrite_offline_choices
 
 
 class OfflineNativeTest(unittest.TestCase):
@@ -19,8 +19,25 @@ class OfflineNativeTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder, "0wjq.smali")
             path.write_text(source, encoding="utf-8")
-            self.assertEqual(rewrite_anchored(folder).get("native offline count accepted"), 1)
+            self.assertEqual(rewrite_offline_choices(folder).get("native offline count accepted"), 1)
             self.assertIn("OfflineChoices;->validCount", path.read_text(encoding="utf-8"))
+
+
+    def test_safe_build_enables_offline_choices_without_other_offline_hooks(self):
+        source = """.class public final LX/0wiL;
+.super Ljava/lang/Object;
+.method public final LIZLLL()LX/0ldB;
+    .registers 11
+    return-object v10
+.end method
+"""
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder, "0wiL.smali")
+            path.write_text(source, encoding="utf-8")
+            self.assertEqual(rewrite_offline_choices(folder).get("native offline row"), 1)
+            patched = path.read_text(encoding="utf-8")
+            self.assertIn("OfflineChoices;->row", patched)
+            self.assertNotIn("OfflineComments;", patched)
 
     def test_native_comments_keep_annotations_and_are_idempotent(self):
         owners = [
@@ -68,7 +85,7 @@ class OfflineNativeTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder, "AwS704S0100000_26.smali")
             path.write_text(source, encoding="utf-8")
-            self.assertEqual(rewrite_anchored(folder).get("native offline choices"), 1)
+            self.assertEqual(rewrite_offline_choices(folder).get("native offline choices"), 1)
             self.assertIn("OfflineChoices;->counts", path.read_text(encoding="utf-8"))
 
 
