@@ -274,7 +274,7 @@ final class SettingsPictures {
         }
 
         void settle() {
-            for (int i = 1; i < 6; i++) {
+            for (int i = 0; i < 6; i++) {
                 shown[i].to(this, want[i] ? 1f : 0f, 380);
                 last[i] = want[i] ? 1f : 0f;
             }
@@ -324,7 +324,7 @@ final class SettingsPictures {
                 x += (cardW + gap) * v;
             }
             int hidden = 0;
-            for (int i = 1; i < 6; i++) if (!want[i]) hidden++;
+            for (int i = 0; i < 6; i++) if (!want[i]) hidden++;
             words(canvas, hidden == 0 ? Local.of("Лента как у TikTok") : Local.of("Скрыто: ") + hidden,
                     getWidth() / 2f, top + cardH + 26 * d, 12, skin.muted(), false, Paint.Align.CENTER);
         }
