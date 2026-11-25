@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from margyt.dexpatch import rewrite_anchored, rewrite_offline_choices
+from margyt.dexpatch import rewrite_anchored, rewrite_offline_choices, rewrite_avatar_shapes
 
 
 class OfflineNativeTest(unittest.TestCase):
@@ -38,6 +38,23 @@ class OfflineNativeTest(unittest.TestCase):
             patched = path.read_text(encoding="utf-8")
             self.assertIn("OfflineChoices;->row", patched)
             self.assertNotIn("OfflineComments;", patched)
+
+    def test_safe_avatar_profile_also_runs_offline_count_hooks(self):
+        source = """.class public final Lkotlin/jvm/internal/AwS704S0100000_26;
+.super Ljava/lang/Object;
+.method public static final invoke$3208(Lkotlin/jvm/internal/AwS704S0100000_26;)Ljava/lang/Object;
+    .registers 2
+    invoke-static {}, LX/0wj1;->LJFF()Ljava/util/List;
+    move-result-object v1
+    return-object v1
+.end method
+"""
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder, "AwS704S0100000_26.smali")
+            path.write_text(source, encoding="utf-8")
+            counts = rewrite_avatar_shapes(folder)
+            self.assertEqual(counts.get("native offline choices"), 1)
+            self.assertIn("OfflineChoices;->counts", path.read_text(encoding="utf-8"))
 
     def test_native_comments_keep_annotations_and_are_idempotent(self):
         owners = [
