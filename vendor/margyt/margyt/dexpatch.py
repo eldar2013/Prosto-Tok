@@ -1017,15 +1017,15 @@ def rewrite_anchored(root: str) -> Dict[str, int]:
             if FEED_ITEM_LIST in declaration:
                 def native_ad_getter(match):
                     body=match.group(0)
-                    if "Feed;->withoutAds" in body:return body
-                    body,hits=re.subn(r"(?m)^    return-object ([vp]\d+)",lambda m:"    invoke-static/range {"+m.group(1)+" .. "+m.group(1)+"}, "+FEED+"->withoutAds(Ljava/util/List;)Ljava/util/List;\n    move-result-object "+m.group(1)+"\n"+m.group(0),body)
+                    if "Feed;->filteredItems" in body:return body
+                    body,hits=re.subn(r"(?m)^    return-object ([vp]\d+)",lambda m:"    invoke-static/range {"+m.group(1)+" .. "+m.group(1)+"}, "+FEED+"->filteredItems(Ljava/util/List;)Ljava/util/List;\n    move-result-object "+m.group(1)+"\n"+m.group(0),body)
                     if hits:counts["native feed ad getter"]=hits
                     return body
                 text=re.sub(r"(?ms)^\.method public getItems\(\)Ljava/util/List;.*?^\.end method",native_ad_getter,text)
                 def native_ad_setter(match):
                     body=match.group(0)
-                    if "Feed;->withoutAds" in body:return body
-                    hook="\n    invoke-static/range {p1 .. p1}, "+FEED+"->withoutAds(Ljava/util/List;)Ljava/util/List;\n    move-result-object p1\n"
+                    if "Feed;->filteredItems" in body:return body
+                    hook="\n    invoke-static/range {p1 .. p1}, "+FEED+"->filteredItems(Ljava/util/List;)Ljava/util/List;\n    move-result-object p1\n"
                     body,hits=re.subn(r"(?m)^    \.registers [0-9]+",lambda m:m.group(0)+hook,body,count=1)
                     if hits:counts["native feed ad ingress"]=hits
                     return body
@@ -2371,7 +2371,7 @@ def rewrite_targets() -> List[str]:
     out.append(COMMENTS+"->mark(Landroid/view/View;)V")
     out.append(COMMENTS+"->openNativeActions(Ljava/lang/Object;)Z")
     out.append(COMMENTS+"->nativeItems(Ljava/lang/Object;Ljava/util/List;)Ljava/util/List;")
-    out.append(FEED+"->withoutAds(Ljava/util/List;)Ljava/util/List;")
+    out.append(FEED+"->filteredItems(Ljava/util/List;)Ljava/util/List;")
     out.append("Lcat/narezany/margyt/Repost;->textureChanged(Landroid/view/View;)V")
     out.append("Lcat/narezany/margyt/Accent;->dislike(Ljava/lang/Object;)V")
     out.append(COMMENTS+"->bindCell(Ljava/lang/Object;)V")
