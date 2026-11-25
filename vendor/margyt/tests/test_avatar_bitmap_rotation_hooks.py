@@ -37,7 +37,10 @@ class AvatarBitmapRotationHooksTest(unittest.TestCase):
         self.assertIn("static boolean turning()", source)
         self.assertIn("static boolean turning() {\n        return false;", source)
         self.assertIn("// The story ring and mask stay fixed while only the photo turns.", source)
-        self.assertIn("private static boolean photoTurning()", source)
+        self.assertIn("private static boolean photoTurning(Object who)", source)
+        self.assertIn("name.contains(\"avatar\")", source)
+        self.assertIn("name.contains(\"profile\")", source)
+        self.assertIn("if (!spins())", source)
 
 
 if __name__ == "__main__":
