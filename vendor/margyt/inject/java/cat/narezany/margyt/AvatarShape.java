@@ -3,14 +3,12 @@ package cat.narezany.margyt;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Looper;
 import android.view.Choreographer;
@@ -150,8 +148,8 @@ public final class AvatarShape {
                     RING_PLACE.setScale(oval.width() / 2f, oval.height() / 2f);
                     RING_PLACE.postTranslate(oval.centerX(), oval.centerY());
                     RING.addPath(unit(shape), RING_PLACE);
-                    // The story ring and mask stay fixed while only the photo turns.
-                    float turn = 0;
+                    // Rotate the avatar outline/ring while its photo remains still.
+                    float turn = photoTurning(who) ? angle() : 0f;
                     if (Math.abs(sweep) >= 359.5f) {
                         canvas.drawPath(RING, paint);
                         return;
@@ -246,8 +244,8 @@ public final class AvatarShape {
     }
 
     /** The mask and border stay still; rotation belongs to the bitmap only. */
-    static boolean turning() {
-        return false;
+    private static boolean turning(Object who) {
+        return photoTurning(who);
     }
 
     /**
@@ -303,9 +301,7 @@ public final class AvatarShape {
             canvas.drawBitmap(bitmap, src, dst, paint);
             return;
         }
-        int save = beginPhotoTurn(canvas, dst.centerX(), dst.centerY(), who);
         canvas.drawBitmap(bitmap, src, dst, paint);
-        endPhotoTurn(canvas, save, who);
     }
 
     public static void drawBitmap(Canvas canvas, Bitmap bitmap, Rect src, Rect dst, Paint paint) {
@@ -314,9 +310,7 @@ public final class AvatarShape {
             canvas.drawBitmap(bitmap, src, dst, paint);
             return;
         }
-        int save = beginPhotoTurn(canvas, (dst.left + dst.right) / 2f, (dst.top + dst.bottom) / 2f, who);
         canvas.drawBitmap(bitmap, src, dst, paint);
-        endPhotoTurn(canvas, save, who);
     }
 
     public static void drawBitmap(Canvas canvas, Bitmap bitmap, float left, float top, Paint paint) {
@@ -325,9 +319,7 @@ public final class AvatarShape {
             canvas.drawBitmap(bitmap, left, top, paint);
             return;
         }
-        int save = beginPhotoTurn(canvas, left + bitmap.getWidth() / 2f, top + bitmap.getHeight() / 2f, who);
         canvas.drawBitmap(bitmap, left, top, paint);
-        endPhotoTurn(canvas, save, who);
     }
 
     public static void drawBitmap(Canvas canvas, Bitmap bitmap, Matrix matrix, Paint paint) {
@@ -338,9 +330,7 @@ public final class AvatarShape {
         }
         RectF bounds = new RectF(0, 0, bitmap.getWidth(), bitmap.getHeight());
         matrix.mapRect(bounds);
-        int save = beginPhotoTurn(canvas, bounds.centerX(), bounds.centerY(), who);
         canvas.drawBitmap(bitmap, matrix, paint);
-        endPhotoTurn(canvas, save, who);
     }
 
     /** What the image loader calls where it used to empty a path. */
@@ -381,8 +371,8 @@ public final class AvatarShape {
      * picture is the paint's, laid on the canvas, so it stays still and the
      * shape moves over it.
      */
-    private static Path turned(Path path) {
-        if (!turning()) return path;
+    private static Path turned(Path path, Object who) {
+        if (!turning(who)) return path;
         float[] at;
         synchronized (SHAPED) {
             at = SHAPED.get(path);
@@ -415,34 +405,15 @@ public final class AvatarShape {
         synchronized (TURNED) {
             Path drawn = path;
             try {
-                drawn = turned(path);
+                drawn = turned(path, who);
             } catch (Throwable error) {
                 // a shape that cannot turn is drawn standing
             }
-            Shader shader = paint == null ? null : paint.getShader();
-            if (photoTurning(who) && shader instanceof BitmapShader) {
-                // TikTok commonly paints the avatar path with a BitmapShader,
-                // not Canvas.drawBitmap. Rotate that shader's local mapping,
-                // leaving the clipping path and its border exactly in place.
-                Matrix original = new Matrix();
-                shader.getLocalMatrix(original);
-                RectF bounds = new RectF();
-                path.computeBounds(bounds, true);
-                Matrix rotation = new Matrix();
-                rotation.setRotate(angle(), bounds.centerX(), bounds.centerY());
-                Matrix transformed = new Matrix();
-                transformed.setConcat(original, rotation);
-                shader.setLocalMatrix(transformed);
-                try {
-                    canvas.drawPath(drawn, paint);
-                } finally {
-                    shader.setLocalMatrix(original);
-                }
-                again(who);
-            } else {
-                canvas.drawPath(drawn, paint);
-                if (drawn != path) again(who);
-            }
+            // Rotate the mask/outline only. The bitmap or shader painted
+            // inside it is never transformed, and generic rounded artwork
+            // is excluded by the avatar-owner check in turned().
+            canvas.drawPath(drawn, paint);
+            if (drawn != path) again(who);
         }
     }
 
