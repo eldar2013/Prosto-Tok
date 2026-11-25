@@ -229,6 +229,11 @@ public final class Feed {
         return out;
     }
 
+    /** Native FeedItemList.getItems/setItems hook: apply every active feed filter. */
+    public static List filteredItems(List items) {
+        return without(items);
+    }
+
     /** A page of posts without the ones nobody asked to see. */
     private static List without(List items) {
         if (items == null) return items;
