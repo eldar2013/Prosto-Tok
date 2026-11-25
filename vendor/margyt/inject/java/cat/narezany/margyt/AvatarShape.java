@@ -283,8 +283,8 @@ public final class AvatarShape {
         return spins() && isAvatarOwner(who);
     }
 
-    private static int beginPhotoTurn(Canvas canvas, float cx, float cy) {
-        if (!photoTurning(owner)) return -1;
+    private static int beginPhotoTurn(Canvas canvas, float cx, float cy, Object who) {
+        if (!photoTurning(who)) return -1;
         int save = canvas.save();
         canvas.rotate(angle(), cx, cy);
         return save;
@@ -303,7 +303,7 @@ public final class AvatarShape {
             canvas.drawBitmap(bitmap, src, dst, paint);
             return;
         }
-        int save = beginPhotoTurn(canvas, dst.centerX(), dst.centerY());
+        int save = beginPhotoTurn(canvas, dst.centerX(), dst.centerY(), who);
         canvas.drawBitmap(bitmap, src, dst, paint);
         endPhotoTurn(canvas, save, who);
     }
@@ -314,7 +314,7 @@ public final class AvatarShape {
             canvas.drawBitmap(bitmap, src, dst, paint);
             return;
         }
-        int save = beginPhotoTurn(canvas, (dst.left + dst.right) / 2f, (dst.top + dst.bottom) / 2f);
+        int save = beginPhotoTurn(canvas, (dst.left + dst.right) / 2f, (dst.top + dst.bottom) / 2f, who);
         canvas.drawBitmap(bitmap, src, dst, paint);
         endPhotoTurn(canvas, save, who);
     }
@@ -325,7 +325,7 @@ public final class AvatarShape {
             canvas.drawBitmap(bitmap, left, top, paint);
             return;
         }
-        int save = beginPhotoTurn(canvas, left + bitmap.getWidth() / 2f, top + bitmap.getHeight() / 2f);
+        int save = beginPhotoTurn(canvas, left + bitmap.getWidth() / 2f, top + bitmap.getHeight() / 2f, who);
         canvas.drawBitmap(bitmap, left, top, paint);
         endPhotoTurn(canvas, save, who);
     }
@@ -338,7 +338,7 @@ public final class AvatarShape {
         }
         RectF bounds = new RectF(0, 0, bitmap.getWidth(), bitmap.getHeight());
         matrix.mapRect(bounds);
-        int save = beginPhotoTurn(canvas, bounds.centerX(), bounds.centerY());
+        int save = beginPhotoTurn(canvas, bounds.centerX(), bounds.centerY(), who);
         canvas.drawBitmap(bitmap, matrix, paint);
         endPhotoTurn(canvas, save, who);
     }
