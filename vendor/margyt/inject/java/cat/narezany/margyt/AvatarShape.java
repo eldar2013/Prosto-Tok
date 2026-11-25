@@ -244,6 +244,10 @@ public final class AvatarShape {
     }
 
     /** The mask and border stay still; rotation belongs to the bitmap only. */
+    static boolean turning() {
+        return spins();
+    }
+
     private static boolean turning(Object who) {
         return photoTurning(who);
     }
@@ -423,7 +427,7 @@ public final class AvatarShape {
         synchronized (TURNED) {
             Path drawn = path;
             try {
-                drawn = turned(path);
+                drawn = turned(path, who);
             } catch (Throwable error) {
                 // a shape that cannot turn is drawn standing
             }
