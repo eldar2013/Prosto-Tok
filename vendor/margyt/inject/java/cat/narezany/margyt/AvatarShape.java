@@ -250,13 +250,41 @@ public final class AvatarShape {
         return false;
     }
 
-    /** Whether the bitmap inside an avatar should rotate, whatever its mask. */
-    private static boolean photoTurning() {
-        return spins();
+    /**
+     * The rounded-image drawable classes are shared with stickers and other
+     * artwork. Only opt in when the drawable is attached to a view whose
+     * resource id identifies an actual profile/avatar image.
+     */
+    private static boolean isAvatarOwner(Object who) {
+        try {
+            View view = null;
+            if (who instanceof View) view = (View) who;
+            else if (who instanceof Drawable) {
+                Drawable drawable = (Drawable) who;
+                if (drawable.getCallback() instanceof View) view = (View) drawable.getCallback();
+            }
+            for (int depth = 0; view != null && depth < 5; depth++) {
+                int id = view.getId();
+                if (id != View.NO_ID) {
+                    String name = view.getResources().getResourceEntryName(id).toLowerCase(java.util.Locale.ROOT);
+                    if (name.contains("avatar") || name.contains("profile")
+                            || name.contains("user_head") || name.contains("userhead")
+                            || name.contains("head_image") || name.contains("user_avatar")) return true;
+                }
+                android.view.ViewParent parent = view.getParent();
+                view = parent instanceof View ? (View) parent : null;
+            }
+        } catch (Throwable ignored) { }
+        return false;
+    }
+
+    /** Rotate only profile/avatar images, never stickers or generic artwork. */
+    private static boolean photoTurning(Object who) {
+        return spins() && isAvatarOwner(who);
     }
 
     private static int beginPhotoTurn(Canvas canvas, float cx, float cy) {
-        if (!photoTurning()) return -1;
+        if (!photoTurning(owner)) return -1;
         int save = canvas.save();
         canvas.rotate(angle(), cx, cy);
         return save;
@@ -392,7 +420,7 @@ public final class AvatarShape {
                 // a shape that cannot turn is drawn standing
             }
             Shader shader = paint == null ? null : paint.getShader();
-            if (photoTurning() && shader instanceof BitmapShader) {
+            if (photoTurning(who) && shader instanceof BitmapShader) {
                 // TikTok commonly paints the avatar path with a BitmapShader,
                 // not Canvas.drawBitmap. Rotate that shader's local mapping,
                 // leaving the clipping path and its border exactly in place.
@@ -455,7 +483,7 @@ public final class AvatarShape {
     private static final Choreographer.FrameCallback TICK = new Choreographer.FrameCallback() {
         @Override public void doFrame(long frameTimeNanos) {
             posted = false;
-            if (!turning()) {
+            if (!spins()) {
                 WAITING.clear();
                 return;
             }
