@@ -5,8 +5,8 @@ from pathlib import Path
 from margyt.dexpatch import rewrite_avatar_shapes
 
 
-class AvatarBitmapRotationHooksTest(unittest.TestCase):
-    def test_bitmap_draw_in_avatar_drawable_is_routed_through_photo_rotation(self):
+class AvatarOutlineRotationHooksTest(unittest.TestCase):
+    def test_avatar_drawable_hooks_mask_path_and_not_bitmap_rotation(self):
         source = """.class public final LX/0HEe;
 .super Ljava/lang/Object;
 .method public final draw(Landroid/graphics/Canvas;)V
@@ -23,20 +23,21 @@ class AvatarBitmapRotationHooksTest(unittest.TestCase):
             self.assertEqual(sum(value for key, value in counts.items() if key.startswith("Canvas->drawBitmap")), 1)
             self.assertIn("AvatarShape;->owner(Ljava/lang/Object;)V", patched)
             self.assertIn("AvatarShape;->drawBitmap(Landroid/graphics/Canvas;Landroid/graphics/Bitmap;Landroid/graphics/Rect;Landroid/graphics/RectF;Landroid/graphics/Paint;)V", patched)
+            self.assertIn("AvatarShape;->drawPath(Landroid/graphics/Canvas;Landroid/graphics/Path;Landroid/graphics/Paint;)V", patched)
 
-    def test_photo_rotation_uses_persisted_speed_and_leaves_mask_stationary(self):
+    def test_outline_rotates_with_speed_while_photo_stays_still(self):
         source = (Path(__file__).resolve().parents[1] /
                   "inject/java/cat/narezany/margyt/AvatarShape.java").read_text(encoding="utf-8")
         self.assertIn('SPIN_SPEED_KEY = "avatar_spin_speed"', source)
         self.assertIn("putFloat(SPIN_SPEED_KEY, value)", source)
-        self.assertIn("canvas.rotate(angle(), cx, cy)", source)
-        self.assertIn("shader instanceof BitmapShader", source)
-        self.assertIn("shader.setLocalMatrix(transformed)", source)
-        self.assertIn("shader.setLocalMatrix(original)", source)
+        self.assertIn("private static boolean turning(Object who)", source)
+        self.assertIn("return photoTurning(who)", source)
+        self.assertIn("drawn = turned(path, who)", source)
+        self.assertIn("canvas.drawPath(drawn, paint)", source)
+        self.assertNotIn("BitmapShader", source)
+        self.assertNotIn("canvas.rotate(angle(), cx, cy)", source)
         self.assertIn("canvas.drawBitmap(bitmap, src, dst, paint)", source)
-        self.assertIn("static boolean turning()", source)
-        self.assertIn("static boolean turning() {\n        return false;", source)
-        self.assertIn("// The story ring and mask stay fixed while only the photo turns.", source)
+        self.assertIn("// Rotate the avatar outline/ring while its photo remains still.", source)
         self.assertIn("private static boolean photoTurning(Object who)", source)
         self.assertIn("name.contains(\"avatar\")", source)
         self.assertIn("name.contains(\"profile\")", source)
