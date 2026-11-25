@@ -2597,7 +2597,7 @@ def rewrite_offline_choices(root: str) -> Dict[str, int]:
                         body = body[:call.end()] + hook + body[call.end():]
                         counts["native offline choices"] = counts.get("native offline choices", 0) + 1
                     return body
-                text = re.sub(r"(?ms)^\.method [^\n]*invoke\\$[^\n]*Ljava/lang/Object;.*?^\.end method", choices, text)
+                text = re.sub(r"(?ms)^\.method [^\n]*invoke\$[^\n]*Ljava/lang/Object;.*?^\.end method", choices, text)
 
             if "LX/0wiL;" in declaration:
                 def row(match):
