@@ -3577,6 +3577,7 @@ public class SettingsActivity extends Activity {
         spinSwitch.setOnChanged(on -> {
             AvatarShape.setSpin(this, on);
             if (!on) avatarSpinSpeedOpen = false;
+            markChanged();
             rebuild();
         });
         LinearLayout.LayoutParams spinSize = new LinearLayout.LayoutParams(dp(52), dp(32));
@@ -3601,7 +3602,10 @@ public class SettingsActivity extends Activity {
                 if (Math.abs(AvatarShape.speed() - spinSpeeds[i]) < 0.01f) speedAt = i;
             }
             box.addView(segmented(new String[] {"1.00×", "1.25×", "1.75×", "2.00×"}, speedAt,
-                    index -> AvatarShape.setSpeed(this, spinSpeeds[index])));
+                    index -> {
+                        AvatarShape.setSpeed(this, spinSpeeds[index]);
+                        markChanged();
+                    }));
         }
         return box;
     }
