@@ -187,7 +187,7 @@ public final class Feed {
         if(had<=0||left!=had)Diary.note("search: a page of "+(had<0?"nothing at all":had+" from TikTok")+(left!=had?", "+left+" after the mod":""));
         return kept;
     }
-    public static List rawItems(FeedItemList page){return page==null?null:withoutAds(page.items);}
+    public static List rawItems(FeedItemList page){return page==null?null:without(page.items);}
 
     private static SharedPreferences prefs() {
         try {
