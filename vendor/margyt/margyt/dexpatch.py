@@ -2582,18 +2582,22 @@ def rewrite_offline_choices(root: str) -> Dict[str, int]:
                     return body
                 text = re.sub(r"(?ms)^\.method public static LIZ\(\)I.*?^\.end method", native_valid, text)
 
-            if "Lkotlin/jvm/internal/AwS704S0100000_26;" in declaration:
+            # Kotlin's generated click-listener class number changes between
+            # TikTok builds. Locate the lambda by the native enum-list call,
+            # not by a version-specific AwS..._26 class/method number.
+            if declaration.startswith(".class") and "Lkotlin/jvm/internal/AwS" in declaration:
                 def choices(match):
                     body = match.group(0)
                     if "OfflineChoices;->counts" in body:
                         return body
-                    needle = re.search(r"invoke-static \{\}, LX/0wj1;->LJFF\(\)Ljava/util/List;\s*move-result-object v1", body)
-                    if needle:
-                        hook = "\n    invoke-static {v1}, Lcat/narezany/margyt/OfflineChoices;->counts(Ljava/util/List;)Ljava/util/List;\n    move-result-object v1"
-                        body = body[:needle.end()] + hook + body[needle.end():]
+                    call = re.search(r"invoke-static \{\}, LX/0wj1;->LJFF\(\)Ljava/util/List;\s*(?:\.line \d+\s*)*move-result-object ([vp]\d+)", body)
+                    if call:
+                        register = call.group(1)
+                        hook = "\n    invoke-static {" + register + "}, Lcat/narezany/margyt/OfflineChoices;->counts(Ljava/util/List;)Ljava/util/List;\n    move-result-object " + register
+                        body = body[:call.end()] + hook + body[call.end():]
                         counts["native offline choices"] = counts.get("native offline choices", 0) + 1
                     return body
-                text = re.sub(r"(?ms)^\.method public static final invoke\$3208\(Lkotlin/jvm/internal/AwS704S0100000_26;\)Ljava/lang/Object;.*?^\.end method", choices, text)
+                text = re.sub(r"(?ms)^\.method [^\n]*invoke\\$[^\n]*Ljava/lang/Object;.*?^\.end method", choices, text)
 
             if "LX/0wiL;" in declaration:
                 def row(match):
