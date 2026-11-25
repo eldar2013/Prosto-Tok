@@ -1910,6 +1910,17 @@ def rewrite_loading(root: str) -> Dict[str, int]:
     though nothing had been added.
     """
     counts: Dict[str, int] = {}
+    # Temporary diagnostics: identify the native download limit path.
+    for dirpath, _dirs, files in os.walk(root):
+        for name in files:
+            if name in ("0wiM.smali", "0wjq.smali", "OfflineModeManagerVM.smali"):
+                with open(os.path.join(dirpath, name), encoding="utf-8") as handle:
+                    diagnostic = handle.read()
+                print("OFFLINE-DIAGNOSTIC " + name)
+                for method in re.finditer(r"(?ms)^\.method .*?^\.end method", diagnostic):
+                    block = method.group(0)
+                    if name == "0wiM.smali" or any(term in block for term in ("t43(", "d43(", "LIZ()I", "getCount", "getState")):
+                        print(block[:9000])
     for dirpath, _dirs, files in os.walk(root):
         for name in files:
             if not name.endswith(".smali"):
