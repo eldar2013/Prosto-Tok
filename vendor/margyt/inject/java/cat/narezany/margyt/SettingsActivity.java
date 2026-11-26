@@ -634,7 +634,6 @@ public class SettingsActivity extends Activity {
     private static final int MENU_APPEARANCE = 92;
     private static final int MENU_ABOUT = 93;
     private static final int MENU_CREDITS = 94;
-    private static final int MENU_APPLY = 95;
 
     /** A single large tile on the Prosto Tok home screen. */
     private View homeCategory(String glyph, String heading, String note, int destination) {
@@ -723,7 +722,6 @@ public class SettingsActivity extends Activity {
         addHomeCategory("palette", "Оформление", "аватарки форма круг квадрат клевер", MENU_APPEARANCE);
         addHomeCategory("info", "О проекте", "информация описание", MENU_ABOUT);
         addHomeCategory("copyright", "Авторство и исходный проект", "лицензия автор исходный код", MENU_CREDITS);
-        addHomeCategory("refresh-cw", "Применение изменений", "перезапуск приложения после изменения фильтров и аватара", MENU_APPLY);
     }
 
     private boolean basicOption(String key) {
@@ -821,8 +819,6 @@ public class SettingsActivity extends Activity {
             aboutPage();
         } else if (settingsGroup == MENU_CREDITS) {
             creditsPage();
-        } else if (settingsGroup == MENU_APPLY) {
-            applyChangesPage();
         } else if (settingsGroup == STATS_PAGE) {
             statsPage();
         }
