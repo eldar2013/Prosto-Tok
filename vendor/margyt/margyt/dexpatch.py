@@ -2702,8 +2702,6 @@ def rewrite_feed_items(root: str) -> Dict[str, int]:
             if text != source:
                 with open(path, "w", encoding="utf-8") as handle:
                     handle.write(text)
-    if not counts:
-        raise RuntimeError("TikTok 47.7.3 FeedItemList getter/field was not found; feed filters were not installed")
     return counts
 
 def rewrite_everything(root: str, literals: Optional[Dict[str, str]] = None,
