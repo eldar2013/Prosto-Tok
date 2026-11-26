@@ -2651,14 +2651,14 @@ def rewrite_feed_items(root: str) -> Dict[str, int]:
     """
     counts: Dict[str, int] = {}
     pattern = re.compile(
-        r"^(\\s*)iget-object ([vp]\\d+), ([vp]\\d+), "
+        r"^(\s*)iget-object ([vp]\d+), ([vp]\d+), "
         + re.escape(FEED_ITEM_LIST) + r"->items:Ljava/util/List;$",
         re.MULTILINE,
     )
     replacement = (
-        r"\\1invoke-static {\\3}, " + FEED
-        + r"->rawItems(" + FEED_ITEM_LIST + r")Ljava/util/List;\\n\\n"
-        + r"\\1move-result-object \\2"
+        r"\1invoke-static {\3}, " + FEED
+        + r"->rawItems(" + FEED_ITEM_LIST + r")Ljava/util/List;\n\n"
+        + r"\1move-result-object \2"
     )
     for dirpath, _dirs, files in os.walk(root):
         for name in files:
