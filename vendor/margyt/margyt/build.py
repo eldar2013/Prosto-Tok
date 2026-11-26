@@ -821,6 +821,7 @@ class Build:
         feature_hits["native avatar ring"]=0
         feature_hits["native avatar spin"]=0
         feature_hits["native avatar spin owner"]=0
+        feature_hits["native avatar component root"]=0
         feature_hits["native feed filtering"]=0
         feature_hits[dexpatch.HDR_LABEL]=0
         feature_hits[dexpatch.START_LABEL]=0
@@ -875,6 +876,7 @@ class Build:
             feature_hits["native avatar shape"] += sum(v for key,v in counts.items() if key.startswith("Path->addCircle"))
             feature_hits["native avatar spin"] += sum(v for key,v in counts.items() if key.startswith(("Canvas->drawPath","Canvas->clipPath")) and any(d in key for d in dexpatch.ROUND_DRAWERS))
             feature_hits["native avatar spin owner"] += counts.get("native avatar spin owner",0)
+            feature_hits["native avatar component root"] += counts.get("native avatar component root",0)
             feature_hits["native feed filtering"] += sum(v for key,v in counts.items() if key.startswith("native feed"))
             feature_hits["native card corners"] += counts.get("native card corners",0)
             feature_hits["native right-area slots"] += counts.get("native right-area slots",0)
@@ -931,10 +933,13 @@ class Build:
                 raise RuntimeError("TikTok avatar mask drawables were not all found; refusing an incomplete build")
             if feature_hits["native avatar spin owner"] < 1:
                 raise RuntimeError("TikTok avatar outline draw hooks were not found; refusing a build with a non-working spin switch")
+            if feature_hits["native avatar component root"] < 1:
+                raise RuntimeError("TikTok feed avatar component was not found; refusing a build without explicit avatar ownership")
             if feature_hits["native feed filtering"] < 1:
                 raise RuntimeError("TikTok feed item hooks were not found; refusing a build with non-working feed filters")
             self.detail("Native feed filters: %d hooks" % feature_hits["native feed filtering"])
-            self.detail("Native avatar outline animation: %d owner hooks" % feature_hits["native avatar spin owner"])
+            self.detail("Native avatar outline animation: %d owner hooks, %d component roots" % (
+                feature_hits["native avatar spin owner"], feature_hits["native avatar component root"]))
             self.detail("Safe profile: Prosto Tok settings, feed filters and avatar masks")
             return
         missing=[feature for feature,hits in feature_hits.items() if not hits]
