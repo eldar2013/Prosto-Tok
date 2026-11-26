@@ -270,7 +270,7 @@ def one(job: dict) -> Tuple[str, Optional[str], Dict[str, int], str]:
     except (OSError, ValueError, KeyError):
         pass
 
-    scratch = os.path.join(job["workspace"], name.replace(".dex", ""))
+    scratch = os.path.join(job["workspace"], name.replace(".dex", "") + "-" + str(os.getpid()))
     shutil.rmtree(scratch, ignore_errors=True)
     os.makedirs(scratch, exist_ok=True)
     try:
