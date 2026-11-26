@@ -142,12 +142,18 @@ public final class Feed {
     }
 
     /** Whether this post is one the person asked not to see. */
+    private static Aweme feedAweme(Object item) {
+        if (item instanceof Aweme) return (Aweme) item;
+        Object nested = NativeRead.get(item, "getAweme");
+        return nested instanceof Aweme ? (Aweme) nested : null;
+    }
+
     private static boolean unwanted(Object item, boolean ads, boolean live, boolean photos, boolean videos) {
-        if (!(item instanceof Aweme)) return false;
-        Aweme post = (Aweme) item;
-        if (mine(post)) return false;
+        Aweme post = feedAweme(item);
         try {
-            if (ads && advert(post)) return true;
+            if (ads && (advert(post) || (post == null && isAdCard(item)))) return true;
+            if (post == null) return false;
+            if (mine(post)) return false;
             if (live && isLive(post)) return true;
             if (isLive(post)) return false;   // a room is neither a photo nor a video
             if (photos && isPhotos(post)) return true;
@@ -156,6 +162,12 @@ public final class Feed {
         } catch (Throwable ignored) {
         }
         return false;
+    }
+
+    private static boolean isAdCard(Object item) {
+        if (item == null || item instanceof Aweme) return false;
+        return NativeRead.get(item, "getPreciseAd") != null
+                || NativeRead.get(item, "getAiAdCard") != null;
     }
 
     /** isAd() in 47.2.41 also requires awemeRawAd != null. The server's explicit
@@ -171,8 +183,8 @@ public final class Feed {
         ArrayList kept=null;
         for(int i=0;i<items.size();i++){
             Object item=items.get(i);
-            Object post=item instanceof Aweme?item:NativeRead.get(item,"getAweme");
-            boolean card=!(item instanceof Aweme) && (NativeRead.get(item,"getPreciseAd")!=null || NativeRead.get(item,"getAiAdCard")!=null);
+            Object post=feedAweme(item);
+            boolean card=isAdCard(item);
             if(advert(post) || card){if(kept==null){kept=new ArrayList(items.size());kept.addAll(items.subList(0,i));}}
             else if(kept!=null)kept.add(item);
         }
@@ -254,9 +266,10 @@ public final class Feed {
             int out=0,index=0;
             List kept=null;
             for(Object item:items) {
-                boolean extra=item instanceof Aweme && ((suggestions && suggestion(item))
-                        || (authors && FeedBlacklist.hides(item))
-                        || (dated && outOfDates((Aweme)item)));
+                Aweme post=feedAweme(item);
+                boolean extra=post!=null && ((suggestions && suggestion(post))
+                        || (authors && FeedBlacklist.hides(post))
+                        || (dated && outOfDates(post)));
                 if(extra || unwanted(item,ads,live,photos,videos)) {
                     if(kept==null){kept=new ArrayList(items.size());kept.addAll(items.subList(0,index));}
                     out++;
