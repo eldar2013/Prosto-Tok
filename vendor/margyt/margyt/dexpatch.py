@@ -2643,22 +2643,25 @@ def rewrite_avatar_shapes(root: str, dex: Optional[bytes] = None) -> Dict[str, i
 
 
 def rewrite_feed_items(root: str) -> Dict[str, int]:
-    """Route every direct FeedItemList.items read through the real feed filters.
-
-    This is deliberately separate from rewrite_models(): Prosto Tok enables
-    only this feed model hook here, rather than activating unrelated dormant
-    model rewrites.
-    """
+    """Route TikTok's native feed list reads through all Prosto Tok filters."""
     counts: Dict[str, int] = {}
-    pattern = re.compile(
-        r"^(\s*)iget-object ([vp]\d+), ([vp]\d+), "
+    getter_call = re.compile(
+        r"invoke-(?:virtual|interface)(/range)? (\\{[^}]*\\}), "
+        + re.escape(FEED_ITEM_LIST) + r"->getItems\\(\\)Ljava/util/List;"
+    )
+    getter_hook = (
+        r"invoke-static\\1 \\2, " + FEED
+        + r"->getItems(" + FEED_ITEM_LIST + r")Ljava/util/List;"
+    )
+    field_read = re.compile(
+        r"^(\\s*)iget-object ([vp]\\d+), ([vp]\\d+), "
         + re.escape(FEED_ITEM_LIST) + r"->items:Ljava/util/List;$",
         re.MULTILINE,
     )
-    replacement = (
-        r"\1invoke-static {\3}, " + FEED
-        + r"->rawItems(" + FEED_ITEM_LIST + r")Ljava/util/List;\n\n"
-        + r"\1move-result-object \2"
+    field_hook = (
+        r"\\1invoke-static {\\3}, " + FEED
+        + r"->rawItems(" + FEED_ITEM_LIST + r")Ljava/util/List;\\n\\n"
+        + r"\\1move-result-object \\2"
     )
     for dirpath, _dirs, files in os.walk(root):
         for name in files:
@@ -2667,17 +2670,41 @@ def rewrite_feed_items(root: str) -> Dict[str, int]:
             path = os.path.join(dirpath, name)
             with open(path, encoding="utf-8") as handle:
                 source = handle.read()
-            if FEED_ITEM_LIST not in source or "->items:Ljava/util/List;" not in source:
+            if FEED_ITEM_LIST not in source:
                 continue
-            patched, hits = pattern.subn(replacement, source)
+            text = source
+            if text.split("\\n", 1)[0] == ".class " + FEED_ITEM_LIST:
+                def patch_getter(match):
+                    body = match.group(0)
+                    if "Feed;->filteredItems" in body:
+                        return body
+                    body, hits = re.subn(
+                        r"(?m)^    return-object ([vp]\\d+)",
+                        lambda m: "    invoke-static {"+m.group(1)+" .. "+m.group(1)+"}, "
+                        + FEED + "->filteredItems(Ljava/util/List;)Ljava/util/List;\\n"
+                        + "    move-result-object " + m.group(1) + "\\n"
+                        + m.group(0),
+                        body,
+                    )
+                    if hits:
+                        counts["native feed getter"] = counts.get("native feed getter", 0) + hits
+                    return body
+                text = re.sub(
+                    r"(?ms)^\\.method public (?:final )?getItems\\(\\)Ljava/util/List;.*?^\\.end method",
+                    patch_getter, text,
+                )
+            text, hits = getter_call.subn(getter_hook, text)
             if hits:
+                counts["native feed getter calls"] = counts.get("native feed getter calls", 0) + hits
+            text, hits = field_read.subn(field_hook, text)
+            if hits:
+                counts["native feed item field"] = counts.get("native feed item field", 0) + hits
+            if text != source:
                 with open(path, "w", encoding="utf-8") as handle:
-                    handle.write(patched)
-                counts["native feed item list"] = counts.get("native feed item list", 0) + hits
-    if not counts.get("native feed item list"):
-        raise RuntimeError("TikTok 47.7.3 FeedItemList.items read was not found; feed filters were not installed")
+                    handle.write(text)
+    if not counts:
+        raise RuntimeError("TikTok 47.7.3 FeedItemList getter/field was not found; feed filters were not installed")
     return counts
-
 
 def rewrite_everything(root: str, literals: Optional[Dict[str, str]] = None,
                        dex: Optional[bytes] = None) -> Dict[str, int]:
