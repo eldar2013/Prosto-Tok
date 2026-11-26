@@ -322,8 +322,16 @@ def patch_all(dexes: Dict[str, bytes], jar: str, api: int, workspace: str,
 
     at_once = workers(len(names))
     cores = os.cpu_count() or 2
-    threads = int(os.environ.get("MARGYT_JOBS") or 0) or max(2, (2 * cores) // max(1, at_once))
-    threads = min(threads, cores)
+    # Keep smali's own worker pool bounded too. A single dex-cache worker
+    # must not fan out into many baksmali/smali threads: on large multidex APKs
+    # that can exhaust resources and leave the assembler without its output.
+    requested_threads = int(os.environ.get("MARGYT_JOBS") or 0)
+    if requested_threads:
+        threads = max(1, min(requested_threads, cores))
+    elif at_once == 1:
+        threads = 1
+    else:
+        threads = min(max(2, (2 * cores) // max(1, at_once)), cores)
     heap = os.environ.get("MARGYT_HEAP") or HEAP
     say("%d dex files, %d at a time" % (len(names), at_once))
 
