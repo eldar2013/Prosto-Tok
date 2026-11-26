@@ -2642,6 +2642,43 @@ def rewrite_avatar_shapes(root: str, dex: Optional[bytes] = None) -> Dict[str, i
     return counts
 
 
+def rewrite_feed_items(root: str) -> Dict[str, int]:
+    """Route every direct FeedItemList.items read through the real feed filters.
+
+    This is deliberately separate from rewrite_models(): Prosto Tok enables
+    only this feed model hook here, rather than activating unrelated dormant
+    model rewrites.
+    """
+    counts: Dict[str, int] = {}
+    pattern = re.compile(
+        r"^(\\s*)iget-object ([vp]\\d+), ([vp]\\d+), "
+        + re.escape(FEED_ITEM_LIST) + r"->items:Ljava/util/List;$",
+        re.MULTILINE,
+    )
+    replacement = (
+        r"\\1invoke-static {\\3}, " + FEED
+        + r"->rawItems(" + FEED_ITEM_LIST + r")Ljava/util/List;\\n\\n"
+        + r"\\1move-result-object \\2"
+    )
+    for dirpath, _dirs, files in os.walk(root):
+        for name in files:
+            if not name.endswith(".smali"):
+                continue
+            path = os.path.join(dirpath, name)
+            with open(path, encoding="utf-8") as handle:
+                source = handle.read()
+            if FEED_ITEM_LIST not in source or "->items:Ljava/util/List;" not in source:
+                continue
+            patched, hits = pattern.subn(replacement, source)
+            if hits:
+                with open(path, "w", encoding="utf-8") as handle:
+                    handle.write(patched)
+                counts["native feed item list"] = counts.get("native feed item list", 0) + hits
+    if not counts.get("native feed item list"):
+        raise RuntimeError("TikTok 47.7.3 FeedItemList.items read was not found; feed filters were not installed")
+    return counts
+
+
 def rewrite_everything(root: str, literals: Optional[Dict[str, str]] = None,
                        dex: Optional[bytes] = None) -> Dict[str, int]:
     """Every rule there is, over a dex that has been taken apart.
@@ -2660,6 +2697,10 @@ def rewrite_everything(root: str, literals: Optional[Dict[str, str]] = None,
     # Prosto Tok: route the six TelephonyManager country/operator reads through
     # Region, which returns the real values while its switch is off.
     for label, hits in rewrite_smali(root).items():
+        counts[label] = counts.get(label, 0) + hits
+    # The general model-rewrite pass is intentionally not enabled for Prosto Tok.
+    # Feed filtering has its own narrowly scoped, required patch.
+    for label, hits in rewrite_feed_items(root).items():
         counts[label] = counts.get(label, 0) + hits
     for label, hits in rewrite_avatar_shapes(root, dex).items():
         counts[label] = counts.get(label, 0) + hits
