@@ -634,6 +634,7 @@ public class SettingsActivity extends Activity {
     private static final int MENU_APPEARANCE = 92;
     private static final int MENU_ABOUT = 93;
     private static final int MENU_CREDITS = 94;
+    private static final int MENU_APPLY = 95;
 
     /** A single large tile on the Prosto Tok home screen. */
     private View homeCategory(String glyph, String heading, String note, int destination) {
@@ -722,6 +723,7 @@ public class SettingsActivity extends Activity {
         addHomeCategory("palette", "Оформление", "аватарки форма круг квадрат клевер", MENU_APPEARANCE);
         addHomeCategory("info", "О проекте", "информация описание", MENU_ABOUT);
         addHomeCategory("copyright", "Авторство и исходный проект", "лицензия автор исходный код", MENU_CREDITS);
+        addHomeCategory("refresh-cw", "Применение изменений", "перезапуск приложения после изменения фильтров и аватара", MENU_APPLY);
     }
 
     private boolean basicOption(String key) {
@@ -738,17 +740,32 @@ public class SettingsActivity extends Activity {
         basics.addView(switchRow());
         basics.addView(line());
         basics.addView(toggleRow("play_circle", Text.HIDE_VIDEOS, Feed.hides(Feed.KEY_VIDEOS),
-                on -> Feed.setHides(Feed.KEY_VIDEOS, on), false));
+                on -> Feed.setHides(Feed.KEY_VIDEOS, on), true));
         basics.addView(line());
         basics.addView(toggleRow("image", Text.HIDE_PHOTOS, Feed.hides(Feed.KEY_PHOTOS),
-                on -> Feed.setHides(Feed.KEY_PHOTOS, on), false));
+                on -> Feed.setHides(Feed.KEY_PHOTOS, on), true));
         basics.addView(line());
         basics.addView(toggleRow("block", Text.HIDE_ADS, Feed.isEnabled(),
-                Feed::setEnabled, false));
+                Feed::setEnabled, true));
         basics.addView(line());
         basics.addView(toggleRow("sensors_off", Text.HIDE_LIVE, Feed.hides(Feed.KEY_LIVE),
-                on -> Feed.setHides(Feed.KEY_LIVE, on), false));
+                on -> Feed.setHides(Feed.KEY_LIVE, on), true));
         column.addView(wrap(basics));
+    }
+
+    private void applyChangesPage() {
+        column.addView(section("Применение изменений"));
+        TextView explanation = new TextView(this);
+        explanation.setText("После изменения фильтров видео, фото, рекламы и трансляций, а также настроек контура аватара, перезапустите Prosto Tok. Изменения применятся при следующем запуске приложения.");
+        explanation.setTextColor(skin.text);
+        explanation.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+        explanation.setLineSpacing(dp(3), 1.05f);
+        explanation.setPadding(dp(20), dp(18), dp(20), dp(18));
+        column.addView(wrap(explanation));
+        LinearLayout actions = card();
+        actions.addView(actionRow("refresh-cw", "Перезапустить приложение", "Закрыть текущий процесс и открыть Prosto Tok заново",
+                () -> restartTikTok()));
+        column.addView(wrap(actions));
     }
 
     private void appearancePage() {
@@ -804,6 +821,8 @@ public class SettingsActivity extends Activity {
             aboutPage();
         } else if (settingsGroup == MENU_CREDITS) {
             creditsPage();
+        } else if (settingsGroup == MENU_APPLY) {
+            applyChangesPage();
         } else if (settingsGroup == STATS_PAGE) {
             statsPage();
         }
