@@ -2691,6 +2691,21 @@ def rewrite_avatar_shapes(root: str, dex: Optional[bytes] = None) -> Dict[str, i
                     r"(?ms)^\.method public final (?:onViewCreated\(Landroid/view/View;\)|s4\(Ljava/lang/Object;\))V.*?^\.end method",
                     mark_feed_avatar, text,
                 )
+            # Give each intercepted draw call its drawable/view owner. Without
+            # this, takeOwner() returns null and avatar-root checks reject it.
+            if any(anchor in declaration for anchor in ROUND_DRAWERS + STORY_RINGS):
+                owner_hook = "    invoke-static/range {p0 .. p0}, Lcat/narezany/margyt/AvatarShape;->owner(Ljava/lang/Object;)V\\n"
+                def attach_avatar_owner(match):
+                    line = match.group(0)
+                    if "AvatarShape;->owner(" in line:
+                        return line
+                    return owner_hook + line
+                text, hits = re.subn(
+                    r"(?m)^([ \\t]*invoke-static(?:/range)? \\{[^}]*\\}, Lcat/narezany/margyt/AvatarShape;->(?:drawPath|clipPath|drawArc)\\([^\\n]*$)",
+                    attach_avatar_owner, text,
+                )
+                if hits:
+                    counts["native avatar draw owner"] = counts.get("native avatar draw owner", 0) + hits
             if text != before:
                 with open(path, "w", encoding="utf-8") as handle:
                     handle.write(text)
