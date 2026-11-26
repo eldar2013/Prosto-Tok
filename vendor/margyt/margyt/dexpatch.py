@@ -2661,9 +2661,13 @@ def rewrite_avatar_shapes(root: str, dex: Optional[bytes] = None) -> Dict[str, i
     return counts
 
 
-def rewrite_feed_items(root: str) -> Dict[str, int]:
+def rewrite_feed_items(root: str, dex: Optional[bytes] = None) -> Dict[str, int]:
     """Route TikTok's native feed list reads through all Prosto Tok filters."""
     counts: Dict[str, int] = {}
+    # Only one or two dex files can contain this model; avoid walking every
+    # candidate dex just because it also contains unrelated colour/region code.
+    if dex is not None and FEED_ITEM_LIST.encode() not in dex:
+        return counts
     getter_call = re.compile(
         r"invoke-(?:virtual|interface)(/range)? (\{[^}]*\}), "
         + re.escape(FEED_ITEM_LIST) + r"->getItems\(\)Ljava/util/List;"
@@ -2744,7 +2748,7 @@ def rewrite_everything(root: str, literals: Optional[Dict[str, str]] = None,
         counts[label] = counts.get(label, 0) + hits
     # The general model-rewrite pass is intentionally not enabled for Prosto Tok.
     # Feed filtering has its own narrowly scoped, required patch.
-    for label, hits in rewrite_feed_items(root).items():
+    for label, hits in rewrite_feed_items(root, dex).items():
         counts[label] = counts.get(label, 0) + hits
     for label, hits in rewrite_avatar_shapes(root, dex).items():
         counts[label] = counts.get(label, 0) + hits
