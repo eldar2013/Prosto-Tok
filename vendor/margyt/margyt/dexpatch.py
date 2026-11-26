@@ -2790,6 +2790,11 @@ def rewrite_everything(root: str, literals: Optional[Dict[str, str]] = None,
     # Prosto Tok keeps TikTok's normal behaviour. Enable only the requested
     # offline-count controls alongside the native avatar-mask selector.
     counts = rewrite_settings_row(root, dex)
+    # Play Services Google auth is tied to TikTok's original signing
+    # certificate. Use TikTok's browser OAuth fallback instead of the
+    # Android account chooser.
+    for label, hits in force_false(root).items():
+        counts[label] = counts.get(label, 0) + hits
     for label, hits in rewrite_offline_choices(root).items():
         counts[label] = counts.get(label, 0) + hits
     # Region metadata is the sole additional behavioural hook enabled for
