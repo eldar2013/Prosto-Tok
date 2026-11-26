@@ -2673,7 +2673,7 @@ def rewrite_feed_items(root: str) -> Dict[str, int]:
             if FEED_ITEM_LIST not in source:
                 continue
             text = source
-            if text.split("\n", 1)[0] == ".class " + FEED_ITEM_LIST:
+            if FEED_ITEM_LIST in text.split("\n", 1)[0]:
                 def patch_getter(match):
                     body = match.group(0)
                     if "Feed;->filteredItems" in body:
