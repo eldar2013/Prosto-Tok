@@ -2739,7 +2739,7 @@ def rewrite_feed_items(root: str, dex: Optional[bytes] = None) -> Dict[str, int]
                         return body
                     body, hits = re.subn(
                         r"(?m)^    return-object ([vp]\d+)",
-                        lambda m: "    invoke-static {"+m.group(1)+" .. "+m.group(1)+"}, "
+                        lambda m: "    invoke-static {"+m.group(1)+"}, "
                         + FEED + "->filteredItems(Ljava/util/List;)Ljava/util/List;\n"
                         + "    move-result-object " + m.group(1) + "\n"
                         + m.group(0),
