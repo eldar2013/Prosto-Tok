@@ -15,7 +15,10 @@ import android.view.Choreographer;
 import android.view.View;
 import android.view.animation.AnimationUtils;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.WeakHashMap;
 
 /**
@@ -269,35 +272,78 @@ public final class AvatarShape {
      * artwork. Only opt in when the drawable is attached to a view whose
      * resource id identifies an actual profile/avatar image.
      */
+    /**
+     * Resolve the native drawable/assembler passed by the bytecode hook to
+     * the actual Android view. TikTok's obfuscated rounded-image helpers are
+     * not themselves Views or Drawables; their view reference is held in an
+     * instance field. The view is accepted only when it (or an ancestor) is
+     * the exact feed-avatar root marked by Repost.anchor().
+     */
+    private static void collectOwnerViews(Object value, int depth,
+            IdentityHashMap<Object, Boolean> seen, ArrayList<View> views) {
+        if (value == null || depth < 0 || seen.put(value, Boolean.TRUE) != null) return;
+        if (value instanceof View) {
+            views.add((View) value);
+            return;
+        }
+        if (value instanceof Drawable) {
+            Drawable drawable = (Drawable) value;
+            if (drawable.getCallback() instanceof View) views.add((View) drawable.getCallback());
+            return;
+        }
+        Class<?> type = value.getClass();
+        int inspected = 0;
+        while (type != null && type != Object.class && inspected < 48) {
+            for (Field field : type.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers()) || field.getType().isPrimitive()) continue;
+                if (++inspected > 48) break;
+                try {
+                    if (!field.isAccessible()) field.setAccessible(true);
+                    Object nested = field.get(value);
+                    if (nested instanceof View) views.add((View) nested);
+                    else if (nested instanceof Drawable) {
+                        Drawable drawable = (Drawable) nested;
+                        if (drawable.getCallback() instanceof View) views.add((View) drawable.getCallback());
+                    } else if (depth > 0 && nested != null
+                            && !(nested instanceof Context)
+                            && !(nested instanceof Canvas)
+                            && !(nested instanceof android.graphics.Bitmap)
+                            && !(nested instanceof android.graphics.Paint)
+                            && !(nested instanceof Path)) {
+                        collectOwnerViews(nested, depth - 1, seen, views);
+                    }
+                } catch (Throwable ignored) { }
+            }
+            type = type.getSuperclass();
+        }
+    }
+
+    private static boolean avatarView(View candidate) {
+        for (View view = candidate; view != null; ) {
+            if (avatarRoot(view)) return true;
+            String type = view.getClass().getName().toLowerCase(java.util.Locale.ROOT);
+            if (type.contains("avatar") || type.contains("profileimage")
+                    || type.contains("profile_image") || type.contains("userhead")) return true;
+            int id = view.getId();
+            if (id != View.NO_ID) {
+                try {
+                    String name = view.getResources().getResourceEntryName(id).toLowerCase(java.util.Locale.ROOT);
+                    if (name.contains("avatar") || name.contains("profile")
+                            || name.contains("user_head") || name.contains("userhead")
+                            || name.contains("head_image") || name.contains("user_avatar")) return true;
+                } catch (Throwable ignored) { }
+            }
+            android.view.ViewParent parent = view.getParent();
+            view = parent instanceof View ? (View) parent : null;
+        }
+        return false;
+    }
+
     private static boolean isAvatarOwner(Object who) {
         try {
-            View view = null;
-            if (who instanceof View) view = (View) who;
-            else if (who instanceof Drawable) {
-                Drawable drawable = (Drawable) who;
-                if (drawable.getCallback() instanceof View) view = (View) drawable.getCallback();
-            }
-            for (int depth = 0; view != null && depth < 6; depth++) {
-                if (avatarRoot(view)) return true;
-                // TikTok 47.7.3 often gives its avatar ImageViews generated IDs,
-                // so the resource-name test alone silently rejects every one.
-                // Keep the test narrow: identify avatar/profile view classes or
-                // explicit avatar resource names, never generic ImageViews.
-                String type = view.getClass().getName().toLowerCase(java.util.Locale.ROOT);
-                if (type.contains("avatar") || type.contains("profileimage")
-                        || type.contains("profile_image") || type.contains("userhead")) return true;
-                int id = view.getId();
-                if (id != View.NO_ID) {
-                    try {
-                        String name = view.getResources().getResourceEntryName(id).toLowerCase(java.util.Locale.ROOT);
-                        if (name.contains("avatar") || name.contains("profile")
-                                || name.contains("user_head") || name.contains("userhead")
-                                || name.contains("head_image") || name.contains("user_avatar")) return true;
-                    } catch (Throwable ignored) { }
-                }
-                android.view.ViewParent parent = view.getParent();
-                view = parent instanceof View ? (View) parent : null;
-            }
+            ArrayList<View> candidates = new ArrayList<>();
+            collectOwnerViews(who, 2, new IdentityHashMap<Object, Boolean>(), candidates);
+            for (View candidate : candidates) if (avatarView(candidate)) return true;
         } catch (Throwable ignored) { }
         return false;
     }
@@ -490,6 +536,18 @@ public final class AvatarShape {
                 try {
                     if (who instanceof View) ((View) who).invalidate();
                     else if (who instanceof Drawable) ((Drawable) who).invalidateSelf();
+                    else {
+                        ArrayList<View> candidates = new ArrayList<>();
+                        collectOwnerViews(who, 2, new IdentityHashMap<Object, Boolean>(), candidates);
+                        for (View candidate : candidates) {
+                            View target = candidate;
+                            for (int depth = 0; target != null && depth < 8; depth++) {
+                                if (avatarRoot(target)) { target.invalidate(); break; }
+                                android.view.ViewParent parent = target.getParent();
+                                target = parent instanceof View ? (View) parent : null;
+                            }
+                        }
+                    }
                 } catch (Throwable ignored) { }
             }
         }
