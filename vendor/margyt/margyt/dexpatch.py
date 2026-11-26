@@ -2317,9 +2317,45 @@ class Smali:
         )
 
     def assemble(self, smali_dir: str, dex_path: str) -> None:
-        self._run(
-            "com.android.tools.smali.smali.Main",
-            ["a", "-a", str(self.api), "-j", str(self.jobs), "-o", dex_path, smali_dir],
+        """Assemble a dex, retrying a silent/low-memory failure with a larger heap.
+
+        Some large TikTok dexes have made smali exit without producing its
+        requested output. A zero exit status is not enough: never let the
+        cache layer discover this later as an unhelpful FileNotFoundError.
+        """
+        main = "com.android.tools.smali.smali.Main"
+        attempts = [
+            (self.heap, self.jobs),
+            ("4g", 1),
+        ]
+        failures = []
+        for heap, jobs in attempts:
+            try:
+                if os.path.exists(dex_path):
+                    os.remove(dex_path)
+                command = [
+                    "java", "-Xmx" + heap, "-cp", self.jar, main,
+                    "a", "-a", str(self.api), "-j", str(jobs),
+                    "-o", dex_path, smali_dir,
+                ]
+                result = subprocess.run(command, capture_output=True, text=True)
+                if result.returncode != 0:
+                    raise RuntimeError(
+                        "smali exited %d:\\n%s\\n%s"
+                        % (result.returncode, result.stdout, result.stderr)
+                    )
+                if not os.path.isfile(dex_path) or os.path.getsize(dex_path) == 0:
+                    raise RuntimeError(
+                        "smali exited 0 but did not create a non-empty dex"
+                        + ("\\nstdout: " + result.stdout if result.stdout else "")
+                        + ("\\nstderr: " + result.stderr if result.stderr else "")
+                    )
+                return
+            except (OSError, RuntimeError) as error:
+                failures.append("%s heap / %s jobs: %s" % (heap, jobs, error))
+        raise RuntimeError(
+            "Could not assemble %s after retry:\\n%s"
+            % (os.path.basename(dex_path), "\\n--- retry ---\\n".join(failures))
         )
 
 
