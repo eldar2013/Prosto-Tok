@@ -265,13 +265,22 @@ public final class AvatarShape {
                 Drawable drawable = (Drawable) who;
                 if (drawable.getCallback() instanceof View) view = (View) drawable.getCallback();
             }
-            for (int depth = 0; view != null && depth < 5; depth++) {
+            for (int depth = 0; view != null && depth < 6; depth++) {
+                // TikTok 47.7.3 often gives its avatar ImageViews generated IDs,
+                // so the resource-name test alone silently rejects every one.
+                // Keep the test narrow: identify avatar/profile view classes or
+                // explicit avatar resource names, never generic ImageViews.
+                String type = view.getClass().getName().toLowerCase(java.util.Locale.ROOT);
+                if (type.contains("avatar") || type.contains("profileimage")
+                        || type.contains("profile_image") || type.contains("userhead")) return true;
                 int id = view.getId();
                 if (id != View.NO_ID) {
-                    String name = view.getResources().getResourceEntryName(id).toLowerCase(java.util.Locale.ROOT);
-                    if (name.contains("avatar") || name.contains("profile")
-                            || name.contains("user_head") || name.contains("userhead")
-                            || name.contains("head_image") || name.contains("user_avatar")) return true;
+                    try {
+                        String name = view.getResources().getResourceEntryName(id).toLowerCase(java.util.Locale.ROOT);
+                        if (name.contains("avatar") || name.contains("profile")
+                                || name.contains("user_head") || name.contains("userhead")
+                                || name.contains("head_image") || name.contains("user_avatar")) return true;
+                    } catch (Throwable ignored) { }
                 }
                 android.view.ViewParent parent = view.getParent();
                 view = parent instanceof View ? (View) parent : null;
