@@ -2646,22 +2646,22 @@ def rewrite_feed_items(root: str) -> Dict[str, int]:
     """Route TikTok's native feed list reads through all Prosto Tok filters."""
     counts: Dict[str, int] = {}
     getter_call = re.compile(
-        r"invoke-(?:virtual|interface)(/range)? (\\{[^}]*\\}), "
-        + re.escape(FEED_ITEM_LIST) + r"->getItems\\(\\)Ljava/util/List;"
+        r"invoke-(?:virtual|interface)(/range)? (\{[^}]*\}), "
+        + re.escape(FEED_ITEM_LIST) + r"->getItems\(\)Ljava/util/List;"
     )
     getter_hook = (
-        r"invoke-static\\1 \\2, " + FEED
+        r"invoke-static\1 \2, " + FEED
         + r"->getItems(" + FEED_ITEM_LIST + r")Ljava/util/List;"
     )
     field_read = re.compile(
-        r"^(\\s*)iget-object ([vp]\\d+), ([vp]\\d+), "
+        r"^(\s*)iget-object ([vp]\d+), ([vp]\d+), "
         + re.escape(FEED_ITEM_LIST) + r"->items:Ljava/util/List;$",
         re.MULTILINE,
     )
     field_hook = (
-        r"\\1invoke-static {\\3}, " + FEED
-        + r"->rawItems(" + FEED_ITEM_LIST + r")Ljava/util/List;\\n\\n"
-        + r"\\1move-result-object \\2"
+        r"\1invoke-static {\3}, " + FEED
+        + r"->rawItems(" + FEED_ITEM_LIST + r")Ljava/util/List;\n\n"
+        + r"\1move-result-object \2"
     )
     for dirpath, _dirs, files in os.walk(root):
         for name in files:
@@ -2673,16 +2673,16 @@ def rewrite_feed_items(root: str) -> Dict[str, int]:
             if FEED_ITEM_LIST not in source:
                 continue
             text = source
-            if text.split("\\n", 1)[0] == ".class " + FEED_ITEM_LIST:
+            if text.split("\n", 1)[0] == ".class " + FEED_ITEM_LIST:
                 def patch_getter(match):
                     body = match.group(0)
                     if "Feed;->filteredItems" in body:
                         return body
                     body, hits = re.subn(
-                        r"(?m)^    return-object ([vp]\\d+)",
+                        r"(?m)^    return-object ([vp]\d+)",
                         lambda m: "    invoke-static {"+m.group(1)+" .. "+m.group(1)+"}, "
-                        + FEED + "->filteredItems(Ljava/util/List;)Ljava/util/List;\\n"
-                        + "    move-result-object " + m.group(1) + "\\n"
+                        + FEED + "->filteredItems(Ljava/util/List;)Ljava/util/List;\n"
+                        + "    move-result-object " + m.group(1) + "\n"
                         + m.group(0),
                         body,
                     )
@@ -2690,7 +2690,7 @@ def rewrite_feed_items(root: str) -> Dict[str, int]:
                         counts["native feed getter"] = counts.get("native feed getter", 0) + hits
                     return body
                 text = re.sub(
-                    r"(?ms)^\\.method public (?:final )?getItems\\(\\)Ljava/util/List;.*?^\\.end method",
+                    r"(?ms)^\.method public (?:final )?getItems\(\)Ljava/util/List;.*?^\.end method",
                     patch_getter, text,
                 )
             text, hits = getter_call.subn(getter_hook, text)
