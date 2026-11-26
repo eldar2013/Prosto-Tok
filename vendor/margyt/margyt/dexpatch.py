@@ -2637,6 +2637,24 @@ def rewrite_avatar_shapes(root: str, dex: Optional[bytes] = None) -> Dict[str, i
                 text, hits = pattern.subn(target, text)
                 if hits:
                     counts[label] = counts.get(label, 0) + hits
+            if AVATAR_CLASS in declaration:
+                def mark_feed_avatar(match):
+                    body = match.group(0)
+                    if "Repost;->anchor" in body:
+                        return body
+                    hook = "    invoke-static/range {p0 .. p0}, Lcat/narezany/margyt/Repost;->anchor(Ljava/lang/Object;)V\\n"
+                    body, hits = re.subn(
+                        r"(?m)^([ \\t]*)return-void",
+                        lambda m: hook + m.group(1) + "return-void",
+                        body, count=1,
+                    )
+                    if hits:
+                        counts["native avatar component root"] = counts.get("native avatar component root", 0) + hits
+                    return body
+                text = re.sub(
+                    r"(?ms)^\\.method public final (?:onViewCreated\\(Landroid/view/View;\\)|s4\\(Ljava/lang/Object;\\))V.*?^\\.end method",
+                    mark_feed_avatar, text,
+                )
             if text != before:
                 with open(path, "w", encoding="utf-8") as handle:
                     handle.write(text)
