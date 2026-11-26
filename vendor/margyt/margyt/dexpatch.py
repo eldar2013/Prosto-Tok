@@ -2372,6 +2372,7 @@ def rewrite_targets() -> List[str]:
     out.append(COMMENTS+"->openNativeActions(Ljava/lang/Object;)Z")
     out.append(COMMENTS+"->nativeItems(Ljava/lang/Object;Ljava/util/List;)Ljava/util/List;")
     out.append(FEED+"->filteredItems(Ljava/util/List;)Ljava/util/List;")
+    out.append(FEED+"->getItems("+FEED_ITEM_LIST+")Ljava/util/List;")
     out.append("Lcat/narezany/margyt/Repost;->textureChanged(Landroid/view/View;)V")
     out.append("Lcat/narezany/margyt/Accent;->dislike(Ljava/lang/Object;)V")
     out.append(COMMENTS+"->bindCell(Ljava/lang/Object;)V")
