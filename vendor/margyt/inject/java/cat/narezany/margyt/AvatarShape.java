@@ -197,6 +197,18 @@ public final class AvatarShape {
      */
     private static final WeakHashMap<Path, float[]> SHAPED = new WeakHashMap<>();
 
+    /** Exact roots supplied by TikTok's native feed-avatar component hook. */
+    private static final WeakHashMap<View, Boolean> AVATAR_ROOTS = new WeakHashMap<>();
+
+    static void markAvatarRoot(View root) {
+        if (root == null) return;
+        synchronized (AVATAR_ROOTS) { AVATAR_ROOTS.put(root, Boolean.TRUE); }
+    }
+
+    private static boolean avatarRoot(View view) {
+        synchronized (AVATAR_ROOTS) { return AVATAR_ROOTS.containsKey(view); }
+    }
+
     static boolean spins() {
         int known = spin;
         if (known < 0) {
@@ -266,6 +278,7 @@ public final class AvatarShape {
                 if (drawable.getCallback() instanceof View) view = (View) drawable.getCallback();
             }
             for (int depth = 0; view != null && depth < 6; depth++) {
+                if (avatarRoot(view)) return true;
                 // TikTok 47.7.3 often gives its avatar ImageViews generated IDs,
                 // so the resource-name test alone silently rejects every one.
                 // Keep the test narrow: identify avatar/profile view classes or
