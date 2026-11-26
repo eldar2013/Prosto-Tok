@@ -70,6 +70,8 @@ jobs:
         working-directory: vendor/margyt
         env:
           ACCENT: ${{ inputs.accent }}
+          MARGYT_WORKERS: "1"
+          MARGYT_JOBS: "1"
         run: |
           set -euo pipefail
           if [ -n "$ACCENT" ]; then
